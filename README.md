@@ -1,6 +1,5 @@
-<p align="center">
-  <strong>ruDevolution</strong> — <em>AI-Powered JavaScript Decompiler</em>
-</p>
+<h1 align="center">ruDevolution</h1>
+<h3 align="center">AI-Powered JavaScript Decompiler</h3>
 
 <p align="center">
   <em>The first decompiler that understands code semantically, recovers original names with AI,<br/>proves every transformation with cryptographic witness chains, and gets smarter with every run.</em>
