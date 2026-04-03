@@ -1,0 +1,1482 @@
+[
+  {
+    "context_strings": ["tools/call", "tools/list", "initialize"],
+    "property_names": ["method", "params", "jsonrpc"],
+    "inferred_name": "McpToolHandler",
+    "module_hint": "mcp",
+    "confidence": 0.95
+  },
+  {
+    "context_strings": ["Bash", "Read", "Edit", "Write"],
+    "property_names": ["description", "inputSchema"],
+    "inferred_name": "ToolDefinitions",
+    "module_hint": "tools",
+    "confidence": 0.95
+  },
+  {
+    "context_strings": ["acceptEdits", "bypassPermissions", "plan"],
+    "property_names": ["permission", "allow", "deny"],
+    "inferred_name": "PermissionSystem",
+    "module_hint": "permissions",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["content_block_delta", "message_start", "message_stop"],
+    "property_names": ["delta", "content_block", "index"],
+    "inferred_name": "StreamingHandler",
+    "module_hint": "streaming",
+    "confidence": 0.93
+  },
+  {
+    "context_strings": ["compact", "preCompactTokenCount", "postCompactTokenCount"],
+    "property_names": ["tokenCount", "compact"],
+    "inferred_name": "ContextCompactor",
+    "module_hint": "context",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["protocolVersion", "serverInfo", "capabilities"],
+    "property_names": ["protocolVersion", "serverInfo"],
+    "inferred_name": "McpProtocolHandler",
+    "module_hint": "mcp",
+    "confidence": 0.95
+  },
+  {
+    "context_strings": ["jsonrpc", "2.0"],
+    "property_names": ["jsonrpc", "result", "error"],
+    "inferred_name": "JsonRpcHandler",
+    "module_hint": "rpc",
+    "confidence": 0.93
+  },
+  {
+    "context_strings": ["mcp-server"],
+    "property_names": ["name", "version"],
+    "inferred_name": "McpServerConfig",
+    "module_hint": "mcp",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["listChanged"],
+    "property_names": ["capabilities", "tools"],
+    "inferred_name": "McpCapabilities",
+    "module_hint": "mcp",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["child_process", "execSync"],
+    "property_names": ["execSync", "spawn"],
+    "inferred_name": "BashExecutor",
+    "module_hint": "tools",
+    "confidence": 0.94
+  },
+  {
+    "context_strings": ["readFileSync", "writeFileSync", "fs"],
+    "property_names": ["readFileSync", "writeFileSync"],
+    "inferred_name": "FileSystemHandler",
+    "module_hint": "tools",
+    "confidence": 0.94
+  },
+  {
+    "context_strings": ["Unknown tool"],
+    "property_names": [],
+    "inferred_name": "ToolDispatcher",
+    "module_hint": "tools",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["router", "middleware"],
+    "property_names": ["use", "routes", "add"],
+    "inferred_name": "HttpRouter",
+    "module_hint": "http",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["Content-Type", "application/json"],
+    "property_names": ["status", "headers", "body"],
+    "inferred_name": "HttpResponse",
+    "module_hint": "http",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["Access-Control-Allow-Origin", "Access-Control-Allow-Methods"],
+    "property_names": ["setHeader"],
+    "inferred_name": "CorsMiddleware",
+    "module_hint": "http",
+    "confidence": 0.93
+  },
+  {
+    "context_strings": ["GET", "POST", "PUT", "DELETE"],
+    "property_names": ["method", "path", "handler"],
+    "inferred_name": "RouteHandler",
+    "module_hint": "http",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["@@INIT"],
+    "property_names": ["getState", "subscribe", "dispatch"],
+    "inferred_name": "StateStore",
+    "module_hint": "state",
+    "confidence": 0.94
+  },
+  {
+    "context_strings": ["prev state:", "next state:", "action:"],
+    "property_names": ["getState"],
+    "inferred_name": "LoggerMiddleware",
+    "module_hint": "state",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["JSON.parse"],
+    "property_names": [],
+    "inferred_name": "JsonParser",
+    "module_hint": "util",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["JSON.stringify"],
+    "property_names": [],
+    "inferred_name": "JsonSerializer",
+    "module_hint": "util",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["Promise", "resolve", "reject"],
+    "property_names": ["then", "catch", "finally"],
+    "inferred_name": "AsyncHandler",
+    "module_hint": "async",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["WebSocket"],
+    "property_names": ["onmessage", "onopen", "onclose", "send"],
+    "inferred_name": "WebSocketClient",
+    "module_hint": "network",
+    "confidence": 0.93
+  },
+  {
+    "context_strings": ["addEventListener"],
+    "property_names": ["addEventListener", "removeEventListener"],
+    "inferred_name": "EventBindings",
+    "module_hint": "events",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["createElement", "appendChild"],
+    "property_names": ["innerHTML", "className", "style"],
+    "inferred_name": "DomBuilder",
+    "module_hint": "dom",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["querySelector", "querySelectorAll"],
+    "property_names": [],
+    "inferred_name": "DomQuery",
+    "module_hint": "dom",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["localStorage", "getItem", "setItem"],
+    "property_names": [],
+    "inferred_name": "LocalStorageAdapter",
+    "module_hint": "storage",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["sessionStorage"],
+    "property_names": [],
+    "inferred_name": "SessionStorageAdapter",
+    "module_hint": "storage",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["fetch"],
+    "property_names": ["method", "headers", "body"],
+    "inferred_name": "HttpClient",
+    "module_hint": "network",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["Authorization", "Bearer"],
+    "property_names": ["headers", "token"],
+    "inferred_name": "AuthTokenHandler",
+    "module_hint": "auth",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["authenticate", "authorization"],
+    "property_names": ["user", "password", "token"],
+    "inferred_name": "AuthHandler",
+    "module_hint": "auth",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["validate", "schema"],
+    "property_names": ["required", "properties", "type"],
+    "inferred_name": "SchemaValidator",
+    "module_hint": "validation",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["console.log"],
+    "property_names": ["log", "info", "debug"],
+    "inferred_name": "Logger",
+    "module_hint": "logging",
+    "confidence": 0.87
+  },
+  {
+    "context_strings": ["console.error"],
+    "property_names": ["error", "warn"],
+    "inferred_name": "ErrorLogger",
+    "module_hint": "logging",
+    "confidence": 0.87
+  },
+  {
+    "context_strings": ["Error:", "error"],
+    "property_names": ["status", "json", "message"],
+    "inferred_name": "ErrorHandler",
+    "module_hint": "error",
+    "confidence": 0.85
+  },
+  {
+    "context_strings": ["subscribe", "unsubscribe"],
+    "property_names": ["subscribe", "unsubscribe"],
+    "inferred_name": "EventSubscriber",
+    "module_hint": "events",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["emit", "on", "off"],
+    "property_names": ["emit", "listeners"],
+    "inferred_name": "EventEmitter",
+    "module_hint": "events",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["plugin", "register"],
+    "property_names": ["register", "unregister", "plugins"],
+    "inferred_name": "PluginManager",
+    "module_hint": "plugins",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["config", "env"],
+    "property_names": ["get", "set", "defaults"],
+    "inferred_name": "ConfigManager",
+    "module_hint": "config",
+    "confidence": 0.85
+  },
+  {
+    "context_strings": ["render", "component"],
+    "property_names": ["props", "state", "render"],
+    "inferred_name": "ComponentRenderer",
+    "module_hint": "ui",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["dispatch", "reducer"],
+    "property_names": ["dispatch", "getState"],
+    "inferred_name": "StoreDispatcher",
+    "module_hint": "state",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["action", "type", "payload"],
+    "property_names": ["type", "payload"],
+    "inferred_name": "ActionCreator",
+    "module_hint": "state",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["setTimeout", "clearTimeout"],
+    "property_names": [],
+    "inferred_name": "Debouncer",
+    "module_hint": "util",
+    "confidence": 0.85
+  },
+  {
+    "context_strings": ["Date.now"],
+    "property_names": [],
+    "inferred_name": "Throttler",
+    "module_hint": "util",
+    "confidence": 0.80
+  },
+  {
+    "context_strings": ["Array.isArray"],
+    "property_names": ["concat", "push"],
+    "inferred_name": "ArrayFlattener",
+    "module_hint": "util",
+    "confidence": 0.82
+  },
+  {
+    "context_strings": ["Object.assign"],
+    "property_names": [],
+    "inferred_name": "ObjectMerger",
+    "module_hint": "util",
+    "confidence": 0.82
+  },
+  {
+    "context_strings": ["Object.keys"],
+    "property_names": [],
+    "inferred_name": "ObjectIterator",
+    "module_hint": "util",
+    "confidence": 0.80
+  },
+  {
+    "context_strings": ["charAt", "toUpperCase", "slice"],
+    "property_names": ["charAt", "toUpperCase"],
+    "inferred_name": "StringCapitalizer",
+    "module_hint": "util",
+    "confidence": 0.85
+  },
+  {
+    "context_strings": ["trim"],
+    "property_names": ["trim"],
+    "inferred_name": "StringTrimmer",
+    "module_hint": "util",
+    "confidence": 0.82
+  },
+  {
+    "context_strings": ["decodeURIComponent"],
+    "property_names": ["path", "query"],
+    "inferred_name": "UrlParser",
+    "module_hint": "http",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["Server listening on port"],
+    "property_names": [],
+    "inferred_name": "ServerListener",
+    "module_hint": "http",
+    "confidence": 0.88
+  },
+
+  {
+    "context_strings": ["Bash"],
+    "property_names": ["command", "timeout"],
+    "inferred_name": "BashTool",
+    "module_hint": "tools",
+    "confidence": 0.93
+  },
+  {
+    "context_strings": ["Read"],
+    "property_names": ["file_path", "offset", "limit"],
+    "inferred_name": "ReadTool",
+    "module_hint": "tools",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["Edit"],
+    "property_names": ["file_path", "old_string", "new_string"],
+    "inferred_name": "EditTool",
+    "module_hint": "tools",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["Write"],
+    "property_names": ["file_path", "content"],
+    "inferred_name": "WriteTool",
+    "module_hint": "tools",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["Glob"],
+    "property_names": ["pattern", "path"],
+    "inferred_name": "GlobTool",
+    "module_hint": "tools",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["Grep"],
+    "property_names": ["pattern", "path", "include"],
+    "inferred_name": "GrepTool",
+    "module_hint": "tools",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["WebFetch"],
+    "property_names": ["url", "headers"],
+    "inferred_name": "WebFetchTool",
+    "module_hint": "tools",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["WebSearch"],
+    "property_names": ["query", "results"],
+    "inferred_name": "WebSearchTool",
+    "module_hint": "tools",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["TodoWrite", "TodoRead"],
+    "property_names": ["todos", "status"],
+    "inferred_name": "TodoTool",
+    "module_hint": "tools",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["NotebookEdit"],
+    "property_names": ["notebook_path", "cell_number"],
+    "inferred_name": "NotebookTool",
+    "module_hint": "tools",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["Agent", "Task"],
+    "property_names": ["prompt", "agent_id"],
+    "inferred_name": "AgentTool",
+    "module_hint": "tools",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["MultiEdit"],
+    "property_names": ["edits", "file_path"],
+    "inferred_name": "MultiEditTool",
+    "module_hint": "tools",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["LS", "list_directory"],
+    "property_names": ["path", "recursive"],
+    "inferred_name": "ListDirectoryTool",
+    "module_hint": "tools",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["tool_use", "tool_result"],
+    "property_names": ["tool_use_id", "content"],
+    "inferred_name": "ToolUseHandler",
+    "module_hint": "tools",
+    "confidence": 0.93
+  },
+  {
+    "context_strings": ["inputSchema", "description"],
+    "property_names": ["name", "description", "inputSchema"],
+    "inferred_name": "ToolSchema",
+    "module_hint": "tools",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["tool_choice"],
+    "property_names": ["type", "name", "disable_parallel_tool_use"],
+    "inferred_name": "ToolChoiceConfig",
+    "module_hint": "tools",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["server_tool_use", "server_tool_result"],
+    "property_names": ["server_tool_use_id"],
+    "inferred_name": "ServerToolHandler",
+    "module_hint": "tools",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["mcp_tool_use", "mcp_tool_result"],
+    "property_names": ["server_name", "tool_name"],
+    "inferred_name": "McpToolUseHandler",
+    "module_hint": "tools",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["dangerouslySkipPermissions"],
+    "property_names": ["skipPermissions"],
+    "inferred_name": "ToolPermissionConfig",
+    "module_hint": "tools",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["ToolResult", "ToolError"],
+    "property_names": ["isError", "output"],
+    "inferred_name": "ToolResultHandler",
+    "module_hint": "tools",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["executeTool", "runTool"],
+    "property_names": ["name", "input"],
+    "inferred_name": "ToolExecutor",
+    "module_hint": "tools",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["toolRegistry", "registeredTools"],
+    "property_names": ["register", "get", "list"],
+    "inferred_name": "ToolRegistry",
+    "module_hint": "tools",
+    "confidence": 0.93
+  },
+  {
+    "context_strings": ["ToolValidator"],
+    "property_names": ["validate", "schema"],
+    "inferred_name": "ToolInputValidator",
+    "module_hint": "tools",
+    "confidence": 0.90
+  },
+
+  {
+    "context_strings": ["text_delta"],
+    "property_names": ["type", "text"],
+    "inferred_name": "TextDeltaHandler",
+    "module_hint": "streaming",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["input_json_delta"],
+    "property_names": ["partial_json"],
+    "inferred_name": "InputJsonDeltaHandler",
+    "module_hint": "streaming",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["content_block_start", "content_block_stop"],
+    "property_names": ["content_block"],
+    "inferred_name": "ContentBlockHandler",
+    "module_hint": "streaming",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["message_delta"],
+    "property_names": ["stop_reason", "stop_sequence"],
+    "inferred_name": "MessageDeltaHandler",
+    "module_hint": "streaming",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["ping"],
+    "property_names": ["type"],
+    "inferred_name": "StreamPingHandler",
+    "module_hint": "streaming",
+    "confidence": 0.87
+  },
+  {
+    "context_strings": ["stream", "event-stream"],
+    "property_names": ["stream", "on"],
+    "inferred_name": "StreamProcessor",
+    "module_hint": "streaming",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["thinking"],
+    "property_names": ["thinking", "budget_tokens"],
+    "inferred_name": "ThinkingHandler",
+    "module_hint": "streaming",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["ServerSentEvent", "data:"],
+    "property_names": ["event", "data"],
+    "inferred_name": "SseParser",
+    "module_hint": "streaming",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["abort", "AbortController"],
+    "property_names": ["signal", "abort"],
+    "inferred_name": "StreamAbortHandler",
+    "module_hint": "streaming",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["onText", "onMessage", "onContentBlock"],
+    "property_names": [],
+    "inferred_name": "StreamCallbackHandler",
+    "module_hint": "streaming",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["chunk", "ReadableStream"],
+    "property_names": ["read", "getReader"],
+    "inferred_name": "StreamReader",
+    "module_hint": "streaming",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["WritableStream", "TransformStream"],
+    "property_names": ["write", "close"],
+    "inferred_name": "StreamWriter",
+    "module_hint": "streaming",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["backpressure", "highWaterMark"],
+    "property_names": ["desiredSize"],
+    "inferred_name": "StreamBackpressure",
+    "module_hint": "streaming",
+    "confidence": 0.87
+  },
+
+  {
+    "context_strings": ["OAuth", "oauth2"],
+    "property_names": ["clientId", "clientSecret", "redirectUri"],
+    "inferred_name": "OAuthHandler",
+    "module_hint": "auth",
+    "confidence": 0.93
+  },
+  {
+    "context_strings": ["API_KEY", "apiKey", "api-key"],
+    "property_names": ["key", "apiKey"],
+    "inferred_name": "ApiKeyAuth",
+    "module_hint": "auth",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["Bedrock", "bedrock"],
+    "property_names": ["region", "accessKeyId", "secretAccessKey"],
+    "inferred_name": "BedrockAuth",
+    "module_hint": "auth",
+    "confidence": 0.93
+  },
+  {
+    "context_strings": ["Vertex", "vertex"],
+    "property_names": ["projectId", "location"],
+    "inferred_name": "VertexAuth",
+    "module_hint": "auth",
+    "confidence": 0.93
+  },
+  {
+    "context_strings": ["sessionToken", "refreshToken"],
+    "property_names": ["token", "expiresAt", "refresh"],
+    "inferred_name": "SessionTokenManager",
+    "module_hint": "auth",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["jwt", "JWT", "jsonwebtoken"],
+    "property_names": ["sign", "verify", "decode"],
+    "inferred_name": "JwtHandler",
+    "module_hint": "auth",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["x-api-key"],
+    "property_names": ["headers"],
+    "inferred_name": "ApiKeyHeader",
+    "module_hint": "auth",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["credentials", "login"],
+    "property_names": ["username", "password"],
+    "inferred_name": "CredentialsHandler",
+    "module_hint": "auth",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["permission_denied", "unauthorized"],
+    "property_names": ["statusCode"],
+    "inferred_name": "AuthErrorHandler",
+    "module_hint": "auth",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["scope", "grant_type"],
+    "property_names": ["scope", "grant_type"],
+    "inferred_name": "OAuthScopeHandler",
+    "module_hint": "auth",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["PKCE", "code_verifier", "code_challenge"],
+    "property_names": [],
+    "inferred_name": "PkceHandler",
+    "module_hint": "auth",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["token_endpoint", "authorization_endpoint"],
+    "property_names": [],
+    "inferred_name": "OAuthEndpoints",
+    "module_hint": "auth",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["device_code", "device_authorization"],
+    "property_names": [],
+    "inferred_name": "DeviceCodeAuth",
+    "module_hint": "auth",
+    "confidence": 0.90
+  },
+
+  {
+    "context_strings": ["createElement", "React"],
+    "property_names": ["createElement", "type"],
+    "inferred_name": "ReactElementFactory",
+    "module_hint": "ui",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["useState"],
+    "property_names": [],
+    "inferred_name": "UseStateHook",
+    "module_hint": "ui",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["useEffect"],
+    "property_names": [],
+    "inferred_name": "UseEffectHook",
+    "module_hint": "ui",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["useRef"],
+    "property_names": ["current"],
+    "inferred_name": "UseRefHook",
+    "module_hint": "ui",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["useMemo", "useCallback"],
+    "property_names": [],
+    "inferred_name": "MemoizationHook",
+    "module_hint": "ui",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["useContext", "createContext"],
+    "property_names": ["Provider", "Consumer"],
+    "inferred_name": "ContextProvider",
+    "module_hint": "ui",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["useReducer"],
+    "property_names": ["dispatch"],
+    "inferred_name": "UseReducerHook",
+    "module_hint": "ui",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["render", "Component"],
+    "property_names": ["render", "componentDidMount", "componentDidUpdate"],
+    "inferred_name": "ReactComponent",
+    "module_hint": "ui",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["Box", "Text", "useInput"],
+    "property_names": [],
+    "inferred_name": "InkComponent",
+    "module_hint": "ui",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["Ink", "ink"],
+    "property_names": ["render", "unmount"],
+    "inferred_name": "InkRenderer",
+    "module_hint": "ui",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["jsx", "jsxs"],
+    "property_names": [],
+    "inferred_name": "JsxFactory",
+    "module_hint": "ui",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["Fragment"],
+    "property_names": [],
+    "inferred_name": "FragmentComponent",
+    "module_hint": "ui",
+    "confidence": 0.87
+  },
+  {
+    "context_strings": ["Suspense", "lazy"],
+    "property_names": ["fallback"],
+    "inferred_name": "SuspenseComponent",
+    "module_hint": "ui",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["forwardRef"],
+    "property_names": ["ref"],
+    "inferred_name": "ForwardRefComponent",
+    "module_hint": "ui",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["memo"],
+    "property_names": [],
+    "inferred_name": "MemoComponent",
+    "module_hint": "ui",
+    "confidence": 0.87
+  },
+  {
+    "context_strings": ["createPortal"],
+    "property_names": [],
+    "inferred_name": "PortalComponent",
+    "module_hint": "ui",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["useLayoutEffect"],
+    "property_names": [],
+    "inferred_name": "LayoutEffectHook",
+    "module_hint": "ui",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["useImperativeHandle"],
+    "property_names": [],
+    "inferred_name": "ImperativeHandleHook",
+    "module_hint": "ui",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["ErrorBoundary"],
+    "property_names": ["componentDidCatch"],
+    "inferred_name": "ErrorBoundaryComponent",
+    "module_hint": "ui",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["StrictMode"],
+    "property_names": [],
+    "inferred_name": "StrictModeWrapper",
+    "module_hint": "ui",
+    "confidence": 0.87
+  },
+
+  {
+    "context_strings": ["ANTHROPIC_API_KEY"],
+    "property_names": [],
+    "inferred_name": "AnthropicApiKeyConfig",
+    "module_hint": "config",
+    "confidence": 0.93
+  },
+  {
+    "context_strings": ["model", "claude-sonnet", "claude-opus", "claude-haiku"],
+    "property_names": ["model", "max_tokens"],
+    "inferred_name": "ModelSelector",
+    "module_hint": "config",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["temperature", "top_p", "top_k"],
+    "property_names": ["temperature", "max_tokens"],
+    "inferred_name": "SamplingConfig",
+    "module_hint": "config",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["feature_flag", "featureFlags"],
+    "property_names": ["isEnabled", "flags"],
+    "inferred_name": "FeatureFlagManager",
+    "module_hint": "config",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["settings.json", ".claude"],
+    "property_names": ["read", "write", "merge"],
+    "inferred_name": "SettingsManager",
+    "module_hint": "config",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["process.env", "NODE_ENV"],
+    "property_names": ["env"],
+    "inferred_name": "EnvVarReader",
+    "module_hint": "config",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["dotenv", ".env"],
+    "property_names": ["config", "parse"],
+    "inferred_name": "DotenvLoader",
+    "module_hint": "config",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["defaultConfig", "mergeConfig"],
+    "property_names": ["defaults", "override"],
+    "inferred_name": "ConfigMerger",
+    "module_hint": "config",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["maxTokens", "contextWindow"],
+    "property_names": ["maxTokens", "contextWindow"],
+    "inferred_name": "TokenLimitConfig",
+    "module_hint": "config",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["baseUrl", "apiVersion"],
+    "property_names": ["baseUrl", "version"],
+    "inferred_name": "ApiEndpointConfig",
+    "module_hint": "config",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["proxy", "HTTPS_PROXY", "HTTP_PROXY"],
+    "property_names": ["proxy"],
+    "inferred_name": "ProxyConfig",
+    "module_hint": "config",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["retry", "maxRetries", "backoff"],
+    "property_names": ["retries", "delay"],
+    "inferred_name": "RetryConfig",
+    "module_hint": "config",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["rateLimit", "requestsPerMinute"],
+    "property_names": ["limit", "window"],
+    "inferred_name": "RateLimitConfig",
+    "module_hint": "config",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["cache", "cacheDir", "ttl"],
+    "property_names": ["get", "set", "clear"],
+    "inferred_name": "CacheConfig",
+    "module_hint": "config",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["theme", "darkMode", "colorScheme"],
+    "property_names": ["theme"],
+    "inferred_name": "ThemeConfig",
+    "module_hint": "config",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["locale", "i18n", "language"],
+    "property_names": ["locale", "language"],
+    "inferred_name": "LocaleConfig",
+    "module_hint": "config",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["keybinding", "keybindings", "shortcut"],
+    "property_names": ["key", "action"],
+    "inferred_name": "KeybindingsConfig",
+    "module_hint": "config",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["workspace", "workspaceFolder"],
+    "property_names": ["path", "root"],
+    "inferred_name": "WorkspaceConfig",
+    "module_hint": "config",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["allowedTools", "disallowedTools"],
+    "property_names": [],
+    "inferred_name": "ToolPolicyConfig",
+    "module_hint": "config",
+    "confidence": 0.90
+  },
+
+  {
+    "context_strings": ["TypeError", "RangeError", "SyntaxError"],
+    "property_names": ["name", "message", "stack"],
+    "inferred_name": "TypeErrorHandler",
+    "module_hint": "error",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["ENOENT", "EACCES", "EPERM"],
+    "property_names": ["code", "errno"],
+    "inferred_name": "FileSystemError",
+    "module_hint": "error",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT"],
+    "property_names": ["code"],
+    "inferred_name": "NetworkError",
+    "module_hint": "error",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["overloaded_error", "rate_limit_error"],
+    "property_names": ["type", "message"],
+    "inferred_name": "ApiErrorHandler",
+    "module_hint": "error",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["invalid_request_error", "authentication_error"],
+    "property_names": ["type", "message"],
+    "inferred_name": "RequestErrorHandler",
+    "module_hint": "error",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["stack", "stackTrace"],
+    "property_names": ["stack", "name"],
+    "inferred_name": "StackTraceFormatter",
+    "module_hint": "error",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["process.exit"],
+    "property_names": ["exitCode"],
+    "inferred_name": "ProcessExitHandler",
+    "module_hint": "error",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["unhandledRejection", "uncaughtException"],
+    "property_names": [],
+    "inferred_name": "GlobalErrorHandler",
+    "module_hint": "error",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["try", "catch", "finally"],
+    "property_names": [],
+    "inferred_name": "ErrorBoundary",
+    "module_hint": "error",
+    "confidence": 0.85
+  },
+  {
+    "context_strings": ["retryable", "isRetryable"],
+    "property_names": ["retry", "maxRetries"],
+    "inferred_name": "RetryableErrorHandler",
+    "module_hint": "error",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["SIGINT", "SIGTERM"],
+    "property_names": [],
+    "inferred_name": "SignalHandler",
+    "module_hint": "error",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["graceful", "shutdown"],
+    "property_names": [],
+    "inferred_name": "GracefulShutdown",
+    "module_hint": "error",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["errorCode", "statusCode"],
+    "property_names": ["statusCode", "errorCode"],
+    "inferred_name": "ErrorCodeMapper",
+    "module_hint": "error",
+    "confidence": 0.87
+  },
+  {
+    "context_strings": ["userFriendly", "displayMessage"],
+    "property_names": [],
+    "inferred_name": "UserFacingErrorFormatter",
+    "module_hint": "error",
+    "confidence": 0.87
+  },
+  {
+    "context_strings": ["sentryDsn", "Sentry"],
+    "property_names": ["captureException"],
+    "inferred_name": "SentryErrorReporter",
+    "module_hint": "error",
+    "confidence": 0.90
+  },
+
+  {
+    "context_strings": ["conversation", "messages"],
+    "property_names": ["messages", "role", "content"],
+    "inferred_name": "ConversationManager",
+    "module_hint": "session",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["turn", "turns"],
+    "property_names": ["role", "content"],
+    "inferred_name": "TurnTracker",
+    "module_hint": "session",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["compaction", "compactMessages"],
+    "property_names": ["tokenCount", "messages"],
+    "inferred_name": "MessageCompactor",
+    "module_hint": "session",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["contextWindow", "maxContextTokens"],
+    "property_names": ["tokens", "limit"],
+    "inferred_name": "ContextWindowManager",
+    "module_hint": "session",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["system_prompt", "systemMessage"],
+    "property_names": ["role", "content"],
+    "inferred_name": "SystemPromptManager",
+    "module_hint": "session",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["user", "assistant"],
+    "property_names": ["role"],
+    "inferred_name": "MessageRoleHandler",
+    "module_hint": "session",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["tokenizer", "countTokens", "encode"],
+    "property_names": ["encode", "decode"],
+    "inferred_name": "Tokenizer",
+    "module_hint": "session",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["resumeSession", "sessionId"],
+    "property_names": ["id", "resume"],
+    "inferred_name": "SessionResumeHandler",
+    "module_hint": "session",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["history", "messageHistory"],
+    "property_names": ["push", "slice"],
+    "inferred_name": "MessageHistory",
+    "module_hint": "session",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["truncate", "trimMessages"],
+    "property_names": ["maxTokens"],
+    "inferred_name": "MessageTruncator",
+    "module_hint": "session",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["cachePoint", "cache_control"],
+    "property_names": ["type"],
+    "inferred_name": "CacheControlHandler",
+    "module_hint": "session",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["ephemeral"],
+    "property_names": ["cache_control"],
+    "inferred_name": "EphemeralCacheHandler",
+    "module_hint": "session",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["costTracker", "inputTokens", "outputTokens"],
+    "property_names": ["inputTokens", "outputTokens"],
+    "inferred_name": "CostTracker",
+    "module_hint": "session",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["conversation_id", "parent_message_id"],
+    "property_names": [],
+    "inferred_name": "ConversationThreadManager",
+    "module_hint": "session",
+    "confidence": 0.89
+  },
+
+  {
+    "context_strings": ["resources/list", "resources/read"],
+    "property_names": ["uri", "mimeType"],
+    "inferred_name": "McpResourceHandler",
+    "module_hint": "mcp",
+    "confidence": 0.93
+  },
+  {
+    "context_strings": ["prompts/list", "prompts/get"],
+    "property_names": ["name", "arguments"],
+    "inferred_name": "McpPromptHandler",
+    "module_hint": "mcp",
+    "confidence": 0.93
+  },
+  {
+    "context_strings": ["stdio", "stdin", "stdout"],
+    "property_names": ["stdin", "stdout"],
+    "inferred_name": "StdioTransport",
+    "module_hint": "mcp",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["sse", "server-sent-events"],
+    "property_names": ["endpoint"],
+    "inferred_name": "SseTransport",
+    "module_hint": "mcp",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["notifications/initialized"],
+    "property_names": [],
+    "inferred_name": "McpInitNotification",
+    "module_hint": "mcp",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["notifications/tools/list_changed"],
+    "property_names": [],
+    "inferred_name": "McpToolListChangedNotification",
+    "module_hint": "mcp",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["roots/list"],
+    "property_names": ["uri"],
+    "inferred_name": "McpRootsHandler",
+    "module_hint": "mcp",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["sampling/createMessage"],
+    "property_names": ["messages", "model"],
+    "inferred_name": "McpSamplingHandler",
+    "module_hint": "mcp",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["mcpServers", "mcpSettings"],
+    "property_names": ["command", "args", "env"],
+    "inferred_name": "McpServerConfig",
+    "module_hint": "mcp",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["logging/setLevel"],
+    "property_names": ["level"],
+    "inferred_name": "McpLoggingHandler",
+    "module_hint": "mcp",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["completion/complete"],
+    "property_names": ["ref", "argument"],
+    "inferred_name": "McpCompletionHandler",
+    "module_hint": "mcp",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["McpError", "mcp_error"],
+    "property_names": ["code", "message"],
+    "inferred_name": "McpErrorHandler",
+    "module_hint": "mcp",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["image", "base64"],
+    "property_names": ["type", "source", "media_type"],
+    "inferred_name": "McpImageResource",
+    "module_hint": "mcp",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["progress", "progressToken"],
+    "property_names": ["progress", "total"],
+    "inferred_name": "McpProgressHandler",
+    "module_hint": "mcp",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["pagination", "cursor"],
+    "property_names": ["cursor", "nextCursor"],
+    "inferred_name": "McpPaginationHandler",
+    "module_hint": "mcp",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["serverVersion", "clientInfo"],
+    "property_names": [],
+    "inferred_name": "McpVersionNegotiator",
+    "module_hint": "mcp",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["transport", "connection"],
+    "property_names": ["connect", "disconnect", "send"],
+    "inferred_name": "McpTransportLayer",
+    "module_hint": "mcp",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["requestId", "correlationId"],
+    "property_names": ["id"],
+    "inferred_name": "McpRequestTracker",
+    "module_hint": "mcp",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["mcpHub", "mcpClient"],
+    "property_names": [],
+    "inferred_name": "McpClientHub",
+    "module_hint": "mcp",
+    "confidence": 0.90
+  },
+
+  {
+    "context_strings": ["/help", "/clear", "/compact"],
+    "property_names": ["name", "description", "handler"],
+    "inferred_name": "SlashCommandHandler",
+    "module_hint": "cli",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["yargs", "commander", "meow"],
+    "property_names": ["parse", "command", "option"],
+    "inferred_name": "CliArgumentParser",
+    "module_hint": "cli",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["--help", "--version", "--verbose"],
+    "property_names": [],
+    "inferred_name": "CliOptionsParser",
+    "module_hint": "cli",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["stdin", "readline"],
+    "property_names": ["question", "close"],
+    "inferred_name": "CliInputHandler",
+    "module_hint": "cli",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["chalk", "ansi", "color"],
+    "property_names": ["red", "green", "yellow", "bold"],
+    "inferred_name": "CliColorFormatter",
+    "module_hint": "cli",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["spinner", "ora"],
+    "property_names": ["start", "stop", "succeed"],
+    "inferred_name": "CliSpinner",
+    "module_hint": "cli",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["progress", "progressBar"],
+    "property_names": ["increment", "total"],
+    "inferred_name": "CliProgressBar",
+    "module_hint": "cli",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["inquirer", "prompt"],
+    "property_names": ["choices", "message"],
+    "inferred_name": "CliPromptHandler",
+    "module_hint": "cli",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["/init", "/doctor"],
+    "property_names": ["execute"],
+    "inferred_name": "CliSubcommandHandler",
+    "module_hint": "cli",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["autocomplete", "tabComplete"],
+    "property_names": ["complete"],
+    "inferred_name": "CliAutoCompleter",
+    "module_hint": "cli",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["/review", "/commit"],
+    "property_names": [],
+    "inferred_name": "CliGitCommands",
+    "module_hint": "cli",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["terminal", "tty"],
+    "property_names": ["columns", "rows"],
+    "inferred_name": "TerminalInfo",
+    "module_hint": "cli",
+    "confidence": 0.87
+  },
+  {
+    "context_strings": ["REPL", "repl"],
+    "property_names": ["eval", "start"],
+    "inferred_name": "ReplHandler",
+    "module_hint": "cli",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["subcommand", "subCommands"],
+    "property_names": ["name", "handler"],
+    "inferred_name": "SubcommandRouter",
+    "module_hint": "cli",
+    "confidence": 0.88
+  },
+
+  {
+    "context_strings": ["OTEL", "opentelemetry", "OpenTelemetry"],
+    "property_names": ["trace", "span"],
+    "inferred_name": "OtelTracer",
+    "module_hint": "telemetry",
+    "confidence": 0.93
+  },
+  {
+    "context_strings": ["Datadog", "datadog", "DD_"],
+    "property_names": ["apiKey", "site"],
+    "inferred_name": "DatadogReporter",
+    "module_hint": "telemetry",
+    "confidence": 0.92
+  },
+  {
+    "context_strings": ["metrics", "counter", "histogram", "gauge"],
+    "property_names": ["increment", "observe", "set"],
+    "inferred_name": "MetricsCollector",
+    "module_hint": "telemetry",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["span", "startSpan", "endSpan"],
+    "property_names": ["traceId", "spanId"],
+    "inferred_name": "SpanTracker",
+    "module_hint": "telemetry",
+    "confidence": 0.91
+  },
+  {
+    "context_strings": ["telemetry", "analytics"],
+    "property_names": ["track", "identify"],
+    "inferred_name": "TelemetryClient",
+    "module_hint": "telemetry",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["traceId", "parentSpanId"],
+    "property_names": [],
+    "inferred_name": "TraceContextPropagator",
+    "module_hint": "telemetry",
+    "confidence": 0.89
+  },
+  {
+    "context_strings": ["prometheus", "scrape"],
+    "property_names": ["register"],
+    "inferred_name": "PrometheusExporter",
+    "module_hint": "telemetry",
+    "confidence": 0.90
+  },
+  {
+    "context_strings": ["latency", "p50", "p99"],
+    "property_names": [],
+    "inferred_name": "LatencyTracker",
+    "module_hint": "telemetry",
+    "confidence": 0.88
+  },
+  {
+    "context_strings": ["sampling", "sampleRate"],
+    "property_names": ["rate"],
+    "inferred_name": "TelemetrySampler",
+    "module_hint": "telemetry",
+    "confidence": 0.87
+  },
+  {
+    "context_strings": ["exportBatch", "batchSize"],
+    "property_names": ["export", "flush"],
+    "inferred_name": "TelemetryBatchExporter",
+    "module_hint": "telemetry",
+    "confidence": 0.88
+  }
+]
