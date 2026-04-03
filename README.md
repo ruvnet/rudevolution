@@ -50,16 +50,37 @@ npx ruvector decompile <package>
 
 ---
 
-## ⚡ Quick Start — Decompile Claude Code in 30 Seconds
+## ⚡ Quick Start
 
 ```bash
-# Decompile Claude Code CLI (the tool you're using right now)
-npx ruvector decompile @anthropic-ai/claude-code --output ./claude-code-decompiled
+# AI CLI tools (closed source, minified bundles)
+npx ruvector decompile @anthropic-ai/claude-code       # Claude Code CLI
+npx ruvector decompile @google-cloud/vertexai           # Google Vertex AI SDK
+npx ruvector decompile @aws-sdk/client-bedrock-runtime  # AWS Bedrock
+npx ruvector decompile openai                           # OpenAI SDK
+npx ruvector decompile @azure/openai                    # Azure OpenAI
+npx ruvector decompile @mistralai/mistralai             # Mistral AI
+npx ruvector decompile replicate                        # Replicate
+npx ruvector decompile @huggingface/inference           # HuggingFace
 
-# Decompile any npm package
-npx ruvector decompile express
-npx ruvector decompile lodash --output ./lodash-src
-npx ruvector decompile ./bundle.min.js
+# Cloud provider CLIs
+npx ruvector decompile @google-cloud/functions-framework
+npx ruvector decompile @aws-sdk/client-lambda
+npx ruvector decompile @azure/functions
+npx ruvector decompile firebase-tools
+npx ruvector decompile vercel
+npx ruvector decompile netlify-cli
+npx ruvector decompile wrangler                         # Cloudflare Workers
+
+# Developer tools
+npx ruvector decompile @modelcontextprotocol/sdk        # MCP SDK
+npx ruvector decompile @copilot-extensions/preview-sdk  # GitHub Copilot
+npx ruvector decompile @cursor/cursor                   # Cursor AI
+npx ruvector decompile vscode                           # VS Code extensions
+
+# Any local file or URL
+npx ruvector decompile ./dist/bundle.min.js
+npx ruvector decompile https://unpkg.com/react
 
 # Full pipeline with 878+ graph-detected modules (requires Rust)
 cargo run --release -p ruvector-decompiler --example run_on_cli -- \
