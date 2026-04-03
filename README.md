@@ -81,6 +81,27 @@ Output: source/ (878 .js files) + witness.json + metrics.json
 
 Discovered: 498 env vars, 25+ tools, 6 permission modes, and unreleased features (dream mode, remote sessions, plugin marketplace, Plan V2 multi-agent). [Full details →](https://github.com/ruvnet/rudevolution/releases/tag/v0.1.0-claude-code-v2.0.62)
 
+### 🏃 It Runs. It's Modifiable.
+
+The decompiled output isn't just readable — **it's a fully functional drop-in replacement:**
+
+```bash
+# Download the decompiled Claude Code
+curl -LO https://github.com/ruvnet/rudevolution/releases/download/v0.1.0-claude-code-v2.0.62/claude-code-v2.0.62-decompiled.js
+
+# Run it — identical behavior to the original
+node claude-code-v2.0.62-decompiled.js --version
+# → 2.0.62 (Claude Code)
+
+# Modify it — add logging, change behavior, build extensions
+cp claude-code-v2.0.62-decompiled.js my-custom-claude.js
+# Edit my-custom-claude.js (2,222 /* Module: XXX */ comments guide you)
+node my-custom-claude.js --version
+# → Still works!
+```
+
+Every transform is **verified at build time** — if a change would break execution, it's automatically reverted. The witness chain proves nothing was added or removed from the original.
+
 ---
 
 ## ⚖️ Legal Basis
