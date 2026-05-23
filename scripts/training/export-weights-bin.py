@@ -18,7 +18,7 @@ import torch
 
 
 def export_weights(checkpoint_path: str, output_path: str) -> None:
-    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
 
     # Handle both full checkpoint dicts and raw state_dicts
     if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
