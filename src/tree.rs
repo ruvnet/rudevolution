@@ -96,8 +96,10 @@ fn build_tree_recursive(
     }
 
     // Name the internal node.
-    let all_in_group: Vec<Module> =
-        indices.iter().filter_map(|&i| all_modules.get(i).cloned()).collect();
+    let all_in_group: Vec<Module> = indices
+        .iter()
+        .filter_map(|&i| all_modules.get(i).cloned())
+        .collect();
     let folder_name = if depth == 0 {
         "src".to_string()
     } else {
@@ -140,8 +142,10 @@ fn make_leaf(
     depth: usize,
     parent_path: &str,
 ) -> ModuleTree {
-    let leaf_modules: Vec<Module> =
-        indices.iter().filter_map(|&i| all_modules.get(i).cloned()).collect();
+    let leaf_modules: Vec<Module> = indices
+        .iter()
+        .filter_map(|&i| all_modules.get(i).cloned())
+        .collect();
     let name = infer_folder_name(&leaf_modules, all_modules);
     let path = if parent_path.is_empty() {
         name.clone()
@@ -281,7 +285,11 @@ mod tests {
     fn test_build_module_tree_basic() {
         let mut decls = Vec::new();
         for i in 0..5 {
-            let refs = if i > 0 { vec![format!("a{}", i - 1)] } else { vec![] };
+            let refs = if i > 0 {
+                vec![format!("a{}", i - 1)]
+            } else {
+                vec![]
+            };
             decls.push(Declaration {
                 name: format!("a{}", i),
                 kind: DeclKind::Var,
@@ -292,7 +300,11 @@ mod tests {
             });
         }
         for i in 0..5 {
-            let refs = if i > 0 { vec![format!("b{}", i - 1)] } else { vec![] };
+            let refs = if i > 0 {
+                vec![format!("b{}", i - 1)]
+            } else {
+                vec![]
+            };
             decls.push(Declaration {
                 name: format!("b{}", i),
                 kind: DeclKind::Var,
