@@ -60,28 +60,25 @@ function beautify(source) {
  */
 function tryRustDecompiler(filePath, outputDir) {
   try {
-    const { execSync } = require('child_process');
-    // Try to find the Rust binary
-    const candidates = [
-      'cargo run --release -p ruvector-decompiler --example run_on_cli --',
-      path.join(__dirname, '../../../../target/release/examples/run_on_cli'),
-    ];
-    for (const bin of candidates) {
-      try {
-        const cmd = bin.includes('cargo')
-          ? `${bin} "${filePath}" --output-dir "${outputDir}"`
-          : `"${bin}" "${filePath}" --output-dir "${outputDir}"`;
-        const result = execSync(cmd, {
-          timeout: 120000,
-          stdio: ['pipe', 'pipe', 'pipe'],
-          cwd: path.join(__dirname, '../../../..'),
-        });
-        const stderr = result.toString();
+    const { spawnSync } = require('child_process');
+    const rustBinary = path.join(__dirname, '../../../../target/release/examples/run_on_cli');
+
+    // Use spawnSync with an explicit args array to avoid shell injection.
+    // The cargo fallback is intentionally omitted here because passing
+    // user-supplied paths through a shell command string is unsafe.
+    try {
+      const result = spawnSync(rustBinary, [filePath, '--output-dir', outputDir], {
+        timeout: 120000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: path.join(__dirname, '../../../..'),
+      });
+      if (result.status === 0) {
+        const stderr = (result.stderr || '').toString();
         const match = stderr.match(/Wrote (\d+) modules/);
         const moduleCount = match ? parseInt(match[1]) : 0;
         return { success: true, modules: moduleCount, outputDir };
-      } catch { continue; }
-    }
+      }
+    } catch { /* binary not available */ }
   } catch {}
   return null;
 }
@@ -305,6 +302,17 @@ function decompileFile(filePath, options = {}) {
  * @returns {Promise<{modules: object[], metrics: object, witness: object|null, url: string, source: string}>}
  */
 async function decompileUrl(url, options = {}) {
+  // Only allow http: and https: to prevent local file access via file:// or
+  // other unexpected schemes (SSRF mitigation).
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    throw new Error(`Invalid URL: ${url}`);
+  }
+  if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+    throw new Error(`Unsupported URL scheme "${parsedUrl.protocol}". Only http: and https: are allowed.`);
+  }
   const resp = await fetch(url, { redirect: 'follow' });
   if (!resp.ok) {
     throw new Error(`Failed to fetch ${url} (HTTP ${resp.status})`);
@@ -361,19 +369,27 @@ function writeOutput(result, outputDir, format = 'modules') {
 
   // Default: 'modules' format — one file per module
   // Supports hierarchical module names like 'tools/bash' -> tools/bash.js
+  const resolvedOutputDir = path.resolve(outputDir);
   for (let i = 0; i < result.modules.length; i++) {
     const mod = result.modules[i];
+    // Sanitize module name: strip leading slashes/dots and path traversal
+    // sequences so a module named '../../evil' cannot write outside outputDir.
+    const safeName = mod.name.replace(/\.\.[/\\]/g, '').replace(/^[/\\]+/, '') || `module-${i + 1}`;
     const header = `// Module: ${mod.name}\n// Confidence: ${mod.confidence}\n// Fragments: ${mod.fragments}\n\n`;
 
-    if (mod.name.includes('/')) {
+    if (safeName.includes('/') || safeName.includes('\\')) {
       // Hierarchical: create subdirectories
-      const filePath = path.join(outputDir, mod.name + '.js');
-      fs.mkdirSync(path.dirname(filePath), { recursive: true });
-      fs.writeFileSync(filePath, header + mod.content);
+      const candidate = path.resolve(resolvedOutputDir, safeName + '.js');
+      // Guard: ensure the resolved path is still inside outputDir
+      if (!candidate.startsWith(resolvedOutputDir + path.sep) && candidate !== resolvedOutputDir) {
+        continue;
+      }
+      fs.mkdirSync(path.dirname(candidate), { recursive: true });
+      fs.writeFileSync(candidate, header + mod.content);
     } else {
       const idx = String(i + 1).padStart(3, '0');
-      const fileName = `module-${idx}-${mod.name}.js`;
-      fs.writeFileSync(path.join(outputDir, fileName), header + mod.content);
+      const fileName = `module-${idx}-${safeName}.js`;
+      fs.writeFileSync(path.join(resolvedOutputDir, fileName), header + mod.content);
     }
   }
 
