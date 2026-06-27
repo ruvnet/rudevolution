@@ -362,6 +362,50 @@ Every inferred name gets a confidence score:
 
 ---
 
+## 💸 Cost Cascade (confidence-gated model routing)
+
+The confidence score above isn't just a label — it's a **routing signal**. The
+`cascade` module wires a cost cascade onto it: run a **cheap** model first, and
+**escalate to an expensive (frontier) model only when confidence < threshold**.
+Most names are recovered cheaply; you only pay the frontier price for the hard,
+low-confidence ones. Pure cost-Pareto — no accuracy is lost, because the cheap
+answer is kept whenever it's already confident enough.
+
+```rust
+use ruvector_decompiler::cascade::{CascadeInferrer, CorpusTier, NameInferrer};
+
+// Cheapest-first tiers. The $0 corpus tier handles the easy cases;
+// `MyFrontierTier` (your model — local transformer or remote API) only runs
+// when the corpus answer is below the threshold.
+let tiers: Vec<Box<dyn NameInferrer>> = vec![
+    Box::new(CorpusTier::builtin()),   // cost 0.0  ($0)
+    Box::new(MyFrontierTier::new()),   // cost 100  (pay only on escalation)
+];
+let mut cascade = CascadeInferrer::new(tiers, CascadeInferrer::DEFAULT_THRESHOLD); // 0.9
+let names = cascade.infer_modules(&modules);
+
+let stats = cascade.stats();
+println!("cheap wins: {:.0}%  cost saved: {:.0}% vs frontier-only",
+    stats.cheap_win_rate() * 100.0,
+    stats.cost_saved() / stats.frontier_only_cost * 100.0);
+```
+
+**Default = unchanged.** The standard `decompile()` pipeline does *not* use the
+cascade — it's strictly opt-in (a single-tier cascade is identical to the
+existing inferrer). Bring your own frontier tier by implementing the
+`NameInferrer` trait (one method); no provider is hardcoded.
+
+**Self-tuning.** Every inference records a `CascadeOutcome` (which tier answered,
+its confidence, whether escalation changed the answer). `cascade.self_tune(step)`
+reads that log and adjusts the threshold for the next run — lowering it when the
+frontier keeps *confirming* the cheap tier (stop paying for confirmations),
+raising it when the frontier keeps *overturning* it. This closes the loop with
+ruDevolution's "gets smarter every run" self-learning.
+
+Runnable, model-free demo (deterministic, $0): `cargo run --example cost_cascade`.
+
+---
+
 <details>
 <summary><strong>📖 Tutorial: Decompile an npm Package</strong></summary>
 
