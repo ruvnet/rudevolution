@@ -1,20 +1,20 @@
 /**
  * validator.js - Operational validation for reconstructed code.
  *
- * Verifies that the reconstruction preserves semantics:
+ * Checks static properties of a reconstruction without executing input:
  *   - Syntax validity (parseable without errors)
  *   - String literal preservation (all strings intact)
  *   - Class hierarchy preservation (same extends chains)
  *   - Export preservation (same exports)
- *   - Functional equivalence (same behavior for test inputs)
+ *   - Byte identity; changed programs have unverified behavior
  */
 
 'use strict';
 
-const vm = require('vm');
+// Validation never executes input code.
 
 /**
- * Validate that a reconstruction preserves the semantics of the original.
+ * Check static preservation signals; these do not prove semantic equivalence.
  *
  * @param {string} originalSource - the minified/beautified original
  * @param {string} reconstructedSource - the reconstructed version
@@ -23,8 +23,7 @@ const vm = require('vm');
  * @param {boolean} [options.checkStrings=true]
  * @param {boolean} [options.checkClasses=true]
  * @param {boolean} [options.checkFunctions=true]
- * @param {number} [options.timeoutMs=1000] - sandbox execution timeout
- * @returns {{syntaxValid: boolean, exportsMatch: boolean, stringsPreserved: boolean, classesMatch: boolean, functionallyEquivalent: boolean, issues: string[]}}
+ * @returns {{syntaxValid: boolean, exportsMatch: boolean, stringsPreserved: boolean, classesMatch: boolean, functionallyEquivalent: boolean|null, issues: string[]}}
  */
 function validateReconstruction(originalSource, reconstructedSource, options = {}) {
   const {
@@ -32,7 +31,6 @@ function validateReconstruction(originalSource, reconstructedSource, options = {
     checkStrings = true,
     checkClasses = true,
     checkFunctions = true,
-    timeoutMs = 1000,
   } = options;
 
   const issues = [];
@@ -87,12 +85,11 @@ function validateReconstruction(originalSource, reconstructedSource, options = {
     }
   }
 
-  // 5. Functional equivalence (best-effort, sandboxed)
+  // 5. Static identity check; never run untrusted input
   if (syntaxValid) {
     const result = checkFunctionalEquivalence(
       originalSource,
       reconstructedSource,
-      timeoutMs,
     );
     functionallyEquivalent = result.equivalent;
     for (const issue of result.issues) {
@@ -274,98 +271,17 @@ function checkFunctionPreservation(original, reconstructed) {
 }
 
 /**
- * Best-effort functional equivalence check.
- * Runs both versions in a sandboxed VM and compares outputs.
- *
- * This is a heuristic — it cannot prove full equivalence, but catches
- * obvious breakages (renamed exports, broken references, etc.).
- *
- * @param {string} original
- * @param {string} reconstructed
- * @param {number} timeoutMs
- * @returns {{equivalent: boolean, issues: string[]}}
+ * Only byte-identical sources can be certified here without execution.
+ * Changed programs require external, OS-isolated differential tests.
+ * null means unverified, never a passing behavioral check.
  */
-function checkFunctionalEquivalence(original, reconstructed, timeoutMs) {
-  const issues = [];
-
-  // Compare the shape of what each version exports
-  const origExports = safeEvalExports(original, timeoutMs);
-  const reconExports = safeEvalExports(reconstructed, timeoutMs);
-
-  if (origExports.error && !reconExports.error) {
-    // Original errors but reconstructed does not — likely OK
-    return { equivalent: true, issues };
-  }
-
-  if (!origExports.error && reconExports.error) {
-    issues.push(`Reconstructed code fails to execute: ${reconExports.error}`);
-    return { equivalent: false, issues };
-  }
-
-  if (origExports.error && reconExports.error) {
-    // Both error — check if it is the same kind of error
-    return { equivalent: true, issues };
-  }
-
-  // Compare export shapes (type and count of exported values)
-  const origKeys = Object.keys(origExports.exports || {}).sort();
-  const reconKeys = Object.keys(reconExports.exports || {}).sort();
-
-  // Exports may have been renamed, so just compare counts and types
-  if (origKeys.length !== reconKeys.length) {
-    issues.push(
-      `Exported key count differs: ${origKeys.length} vs ${reconKeys.length}`,
-    );
-  }
-
-  // Compare types of exported values
-  const origTypes = origKeys.map((k) => typeof origExports.exports[k]).sort();
-  const reconTypes = reconKeys.map((k) => typeof reconExports.exports[k]).sort();
-
-  for (let i = 0; i < Math.min(origTypes.length, reconTypes.length); i++) {
-    if (origTypes[i] !== reconTypes[i]) {
-      issues.push(
-        `Export type mismatch at position ${i}: ${origTypes[i]} vs ${reconTypes[i]}`,
-      );
-    }
-  }
-
-  return { equivalent: issues.length === 0, issues };
-}
-
-/**
- * Safely execute code in a VM sandbox and extract module.exports.
- *
- * @param {string} source
- * @param {number} timeoutMs
- * @returns {{exports: object|null, error: string|null}}
- */
-function safeEvalExports(source, timeoutMs) {
-  try {
-    const sandbox = {
-      module: { exports: {} },
-      exports: {},
-      require: () => ({}),
-      console: { log() {}, error() {}, warn() {}, info() {} },
-      process: { env: {}, argv: [], cwd: () => '/' },
-      setTimeout: () => {},
-      setInterval: () => {},
-      clearTimeout: () => {},
-      clearInterval: () => {},
-      Buffer: { from: () => Buffer.alloc(0), alloc: () => Buffer.alloc(0) },
-      global: {},
-      __dirname: '/',
-      __filename: '/test.js',
-    };
-
-    const context = vm.createContext(sandbox);
-    const script = new vm.Script(source, { filename: 'reconstructed.js' });
-    script.runInContext(context, { timeout: timeoutMs });
-
-    return { exports: sandbox.module.exports, error: null };
-  } catch (err) {
-    return { exports: null, error: err.message };
-  }
+function checkFunctionalEquivalence(original, reconstructed) {
+  const identical = original === reconstructed;
+  return {
+    equivalent: identical ? true : null,
+    status: identical ? 'identical' : 'unverified',
+    issues: identical ? [] : ['Behavioral equivalence unverified: input execution is disabled'],
+  };
 }
 
 module.exports = {

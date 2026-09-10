@@ -48,8 +48,16 @@ pub struct TransformerEncoder {
 impl TransformerEncoder {
     /// Load from binary weights file (see `export-weights-bin.py`).
     pub fn from_weights_bin(path: &Path) -> Result<Self, DecompilerError> {
-        let data = std::fs::read(path)
+        // Bound reads even if a file grows after opening.
+        let file = std::fs::File::open(path)
+            .map_err(|e| DecompilerError::ModelError(format!("failed to open weights: {e}")))?;
+        let mut data = Vec::new();
+        file.take(256 * 1024 * 1024 + 1)
+            .read_to_end(&mut data)
             .map_err(|e| DecompilerError::ModelError(format!("failed to read weights: {e}")))?;
+        if data.len() > 256 * 1024 * 1024 {
+            return Err(DecompilerError::ModelError("weights exceed 256 MiB".into()));
+        }
         Self::from_tensor_map(&parse_bin_tensors(&data)?)
     }
 
@@ -222,12 +230,62 @@ impl TransformerEncoder {
             .filter_map(|k| k.strip_prefix("encoder.layers."))
             .filter_map(|r| r.split('.').next()?.parse::<usize>().ok())
             .max()
-            .map(|m| m + 1)
+            .map(|m| m.checked_add(1).unwrap_or(usize::MAX))
             .unwrap_or(3);
+        if embed_dim == 0 || embed_dim > 1024 || num_layers > 32 {
+            return Err(DecompilerError::ModelError(
+                "unsupported model dimensions".into(),
+            ));
+        }
 
         let ffn_dim = shape("encoder.layers.0.linear1.weight")
             .and_then(|s| if s.len() == 2 { Some(s[0]) } else { None })
             .unwrap_or(512);
+
+        if ffn_dim == 0 || ffn_dim > 4096 {
+            return Err(DecompilerError::ModelError(
+                "unsupported FFN dimensions".into(),
+            ));
+        }
+        let check = |name: &str, expected: &[usize]| -> Result<(), DecompilerError> {
+            match t.get(name) {
+                Some((shape, values))
+                    if shape == expected
+                        && values.len() == expected.iter().product::<usize>()
+                        && values.iter().all(|v| v.is_finite()) =>
+                {
+                    Ok(())
+                }
+                _ => Err(DecompilerError::ModelError(format!(
+                    "invalid tensor: {name}"
+                ))),
+            }
+        };
+        check("char_embed.weight", &[VOCAB_SIZE, embed_dim])?;
+        check("pos_embed.weight", &[TOTAL_SEQ, embed_dim])?;
+        check("layer_norm.weight", &[embed_dim])?;
+        check("layer_norm.bias", &[embed_dim])?;
+        check("output_proj.weight", &[VOCAB_SIZE, embed_dim])?;
+        check("output_proj.bias", &[VOCAB_SIZE])?;
+        for i in 0..num_layers {
+            let p = format!("encoder.layers.{i}");
+            for (suffix, dims) in [
+                ("self_attn.in_proj_weight", vec![3 * embed_dim, embed_dim]),
+                ("self_attn.in_proj_bias", vec![3 * embed_dim]),
+                ("self_attn.out_proj.weight", vec![embed_dim, embed_dim]),
+                ("self_attn.out_proj.bias", vec![embed_dim]),
+                ("linear1.weight", vec![ffn_dim, embed_dim]),
+                ("linear1.bias", vec![ffn_dim]),
+                ("linear2.weight", vec![embed_dim, ffn_dim]),
+                ("linear2.bias", vec![embed_dim]),
+                ("norm1.weight", vec![embed_dim]),
+                ("norm1.bias", vec![embed_dim]),
+                ("norm2.weight", vec![embed_dim]),
+                ("norm2.bias", vec![embed_dim]),
+            ] {
+                check(&format!("{p}.{suffix}"), &dims)?;
+            }
+        }
 
         // Verify in_proj_weight exists; infer num_heads from embed_dim
         let _ = get("encoder.layers.0.self_attn.in_proj_weight")?;
@@ -417,12 +475,13 @@ fn parse_bin_tensors(
     let mut buf4 = [0u8; 4];
 
     while (cur.position() as usize) < data.len() {
-        if cur.read_exact(&mut buf4).is_err() {
-            break;
-        }
+        cur.read_exact(&mut buf4)
+            .map_err(|_| DecompilerError::ModelError("truncated tensor header".into()))?;
         let name_len = u32::from_le_bytes(buf4) as usize;
-        if name_len == 0 || name_len > 1024 {
-            break;
+        if name_len == 0 || name_len > 1024 || tensors.len() >= 1024 {
+            return Err(DecompilerError::ModelError(
+                "invalid tensor name or count".into(),
+            ));
         }
 
         let mut name_buf = vec![0u8; name_len];
@@ -435,6 +494,9 @@ fn parse_bin_tensors(
             .map_err(|e| DecompilerError::ModelError(format!("truncated ndim for {name}: {e}")))?;
         let ndim = u32::from_le_bytes(buf4) as usize;
 
+        if ndim == 0 || ndim > 8 {
+            return Err(DecompilerError::ModelError("invalid tensor rank".into()));
+        }
         let mut shape = Vec::with_capacity(ndim);
         let mut numel = 1usize;
         for _ in 0..ndim {
@@ -442,13 +504,18 @@ fn parse_bin_tensors(
                 DecompilerError::ModelError(format!("truncated shape for {name}: {e}"))
             })?;
             let dim = u32::from_le_bytes(buf4) as usize;
-            numel *= dim;
+            numel = numel
+                .checked_mul(dim)
+                .filter(|&n| n > 0)
+                .ok_or_else(|| DecompilerError::ModelError("invalid tensor size".into()))?;
             shape.push(dim);
         }
 
-        let byte_len = numel * 4;
+        let byte_len = numel
+            .checked_mul(4)
+            .ok_or_else(|| DecompilerError::ModelError("tensor byte size overflow".into()))?;
         let pos = cur.position() as usize;
-        if pos + byte_len > data.len() {
+        if byte_len > data.len() - pos {
             return Err(DecompilerError::ModelError(format!(
                 "truncated data for {name}: need {byte_len} bytes"
             )));
@@ -458,6 +525,11 @@ fn parse_bin_tensors(
             float_data[i] = f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
         }
         cur.set_position((pos + byte_len) as u64);
+        if float_data.iter().any(|v| !v.is_finite()) || tensors.contains_key(&name) {
+            return Err(DecompilerError::ModelError(
+                "nonfinite or duplicate tensor".into(),
+            ));
+        }
         tensors.insert(name, (shape, float_data));
     }
 
@@ -499,6 +571,46 @@ mod tests {
     fn test_softmax_stability() {
         let p = softmax(&[1000.0, 1001.0, 1002.0]);
         assert!((p.iter().sum::<f32>() - 1.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn rejects_malformed_tensor_dimensions() {
+        for shape in [vec![], vec![0], vec![u32::MAX; 8], vec![1; 9]] {
+            let mut data = 1u32.to_le_bytes().to_vec();
+            data.push(b'x');
+            data.extend_from_slice(&(shape.len() as u32).to_le_bytes());
+            for dim in shape {
+                data.extend_from_slice(&dim.to_le_bytes());
+            }
+            assert!(parse_bin_tensors(&data).is_err());
+        }
+        assert!(parse_bin_tensors(&[1, 2]).is_err());
+    }
+
+    #[test]
+    fn rejects_duplicate_and_nonfinite_tensors() {
+        let mut tensor = 1u32.to_le_bytes().to_vec();
+        tensor.push(b'x');
+        tensor.extend_from_slice(&1u32.to_le_bytes());
+        tensor.extend_from_slice(&1u32.to_le_bytes());
+        tensor.extend_from_slice(&1f32.to_le_bytes());
+        assert!(parse_bin_tensors(&tensor.repeat(2)).is_err());
+        let end = tensor.len();
+        tensor[end - 4..].copy_from_slice(&f32::NAN.to_le_bytes());
+        assert!(parse_bin_tensors(&tensor).is_err());
+    }
+
+    #[test]
+    fn rejects_invalid_model_dimensions() {
+        let mut tensors = std::collections::HashMap::new();
+        tensors.insert("char_embed.weight".into(), (vec![256, 0], vec![]));
+        assert!(TransformerEncoder::from_tensor_map(&tensors).is_err());
+        tensors.insert("char_embed.weight".into(), (vec![256, 4], vec![0.0; 1024]));
+        tensors.insert(
+            format!("encoder.layers.{}.weight", usize::MAX),
+            (vec![1], vec![0.0]),
+        );
+        assert!(TransformerEncoder::from_tensor_map(&tensors).is_err());
     }
 
     #[test]

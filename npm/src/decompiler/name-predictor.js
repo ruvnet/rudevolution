@@ -26,18 +26,20 @@ function loadPatterns(patternPath) {
 
   const defaultPath = path.resolve(
     __dirname,
-    '../../../../../crates/ruvector-decompiler/data/claude-code-patterns.json',
+    '../../../data/claude-code-patterns.json',
   );
   const resolved = patternPath || defaultPath;
 
   try {
     const raw = fs.readFileSync(resolved, 'utf-8');
-    _cachedPatterns = JSON.parse(raw);
-    return _cachedPatterns;
+    const patterns = JSON.parse(raw);
+    if (!Array.isArray(patterns)) return [];
+    if (!patternPath) _cachedPatterns = patterns;
+    return patterns;
   } catch {
     // Pattern file not found — return empty, rely on structural rules
-    _cachedPatterns = [];
-    return _cachedPatterns;
+    if (!patternPath) _cachedPatterns = [];
+    return [];
   }
 }
 

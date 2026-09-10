@@ -1,9 +1,8 @@
 /**
- * reference-tracker.js - Scope-aware identifier tracking and bulk renaming.
+ * reference-tracker.js - Heuristic identifier tracking and bulk renaming.
  *
- * Tracks all occurrences of each identifier in the source, respecting
- * JavaScript scoping rules (function, block, module). When an identifier
- * is renamed, ALL references in the same scope are updated consistently.
+ * Scans textual occurrences. This is not a binding-aware parser and does not
+ * guarantee scope preservation; use only for exploratory readability output.
  *
  * Does NOT use a full AST parser — operates on regex-based token scanning
  * so it works on partially-valid or beautified-minified code.
@@ -160,13 +159,14 @@ function applyRename(source, oldName, newName) {
   const refs = findAllReferences(source, oldName);
   if (refs.length === 0) return source;
 
-  // Apply replacements from end to start to preserve positions
-  const chars = source.split('');
-  for (let i = refs.length - 1; i >= 0; i--) {
-    const { start, end } = refs[i];
-    chars.splice(start, end - start, newName);
+  const chunks = [];
+  let cursor = 0;
+  for (const { start, end } of refs) {
+    chunks.push(source.slice(cursor, start), newName);
+    cursor = end;
   }
-  return chars.join('');
+  chunks.push(source.slice(cursor));
+  return chunks.join('');
 }
 
 /**
@@ -209,12 +209,15 @@ function applyAllRenames(source, renames) {
     }
   }
 
-  let result = source;
-  for (const { start, end, newName } of filtered) {
-    result = result.substring(0, start) + newName + result.substring(end);
+  const chunks = [];
+  let cursor = 0;
+  for (let i = filtered.length - 1; i >= 0; i--) {
+    const { start, end, newName } = filtered[i];
+    chunks.push(source.slice(cursor, start), newName);
+    cursor = end;
   }
-
-  return result;
+  chunks.push(source.slice(cursor));
+  return chunks.join('');
 }
 
 /**

@@ -14,6 +14,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const { fetchText } = require('./safe-fetch');
+const { ensureDirectory, writeNewFile, moduleFilename } = require('./safe-output');
 const {
   fetchPackageInfo,
   fetchPackageFileList,
@@ -61,7 +63,7 @@ function beautify(source) {
 function tryRustDecompiler(filePath, outputDir) {
   try {
     const { spawnSync } = require('child_process');
-    const rustBinary = path.join(__dirname, '../../../../target/release/examples/run_on_cli');
+    const rustBinary = path.join(__dirname, '../../../target/release/examples/run_on_cli');
 
     // Use spawnSync with an explicit args array to avoid shell injection.
     // The cargo fallback is intentionally omitted here because passing
@@ -70,7 +72,7 @@ function tryRustDecompiler(filePath, outputDir) {
       const result = spawnSync(rustBinary, [filePath, '--output-dir', outputDir], {
         timeout: 120000,
         stdio: ['pipe', 'pipe', 'pipe'],
-        cwd: path.join(__dirname, '../../../..'),
+        cwd: path.join(__dirname, '../../..'),
       });
       if (result.status === 0) {
         const stderr = (result.stderr || '').toString();
@@ -116,46 +118,43 @@ function decompileSource(source, options = {}) {
   } = options;
 
   // Try Rust Louvain pipeline first (878+ modules, 100% parse rate)
-  if (useRust && filePath && source.length > 100000) {
-    const tmpDir = path.join(require('os').tmpdir(), 'ruvector-decompile-' + Date.now());
-    const rustResult = tryRustDecompiler(filePath, tmpDir);
-    if (rustResult && rustResult.success) {
-      // Load modules from Rust output
-      const sourceDir = path.join(tmpDir, 'source');
-      const rustModules = [];
-      try {
-        for (const f of fs.readdirSync(sourceDir).filter(f => f.endsWith('.js'))) {
-          const content = fs.readFileSync(path.join(sourceDir, f), 'utf8');
-          rustModules.push({
-            name: f.replace('.js', ''),
-            content,
-            fragments: 0,
-            confidence: 0.8,
-          });
+  if (useRust && !reconstruct && filePath && source.length > 100000) {
+    const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'ruvector-decompile-'));
+    try {
+      const rustResult = tryRustDecompiler(filePath, tmpDir);
+      if (rustResult && rustResult.success) {
+        // Load modules from Rust output
+        const sourceDir = path.join(tmpDir, 'source');
+        const rustModules = [];
+        try {
+          for (const f of fs.readdirSync(sourceDir).filter(f => f.endsWith('.js')).sort()) {
+            const content = fs.readFileSync(path.join(sourceDir, f), 'utf8');
+            rustModules.push({
+              name: f.replace('.js', ''),
+              content,
+              fragments: 0,
+              confidence: 0.8,
+            });
+          }
+        } catch {}
+        if (rustModules.length > 0) {
+          const sourceMetrics = computeMetrics(source);
+          return {
+            modules: rustModules,
+            metrics: { source: sourceMetrics, modules: rustModules.length, engine: 'rust-louvain' },
+            witness: generateWitness ? buildWitnessChain(source, rustModules) : null,
+            beautifiedSource: source,
+            source,
+          };
         }
-      } catch {}
-      if (rustModules.length > 0) {
-        const sourceMetrics = computeMetrics(source);
-        const witnessPath = path.join(tmpDir, 'witness.json');
-        let witnessChain = null;
-        try { witnessChain = JSON.parse(fs.readFileSync(witnessPath, 'utf8')); } catch {}
-        return {
-          modules: rustModules,
-          metrics: { source: sourceMetrics, modules: rustModules.length, engine: 'rust-louvain' },
-          witness: witnessChain,
-          beautifiedSource: source,
-          source,
-        };
       }
-    }
+    } finally { fs.rmSync(tmpDir, { recursive: true, force: true }); }
   }
 
   // Fallback: Node.js keyword-based splitting
   const beautified = beautify(source);
   const { modules, unclassified } = splitModules(beautified, { minConfidence });
   const sourceMetrics = computeMetrics(beautified);
-  const moduleMetrics = computeModuleMetrics(modules);
-  const witnessChain = generateWitness ? buildWitnessChain(source, modules) : null;
 
   // Optional: apply readable reconstruction to each module
   let reconstructionSummary = null;
@@ -213,10 +212,10 @@ function decompileSource(source, options = {}) {
     modules,
     metrics: {
       source: sourceMetrics,
-      modules: moduleMetrics,
+      modules: computeModuleMetrics(modules),
       unclassifiedStatements: unclassified.length,
     },
-    witness: witnessChain,
+    witness: generateWitness ? buildWitnessChain(source, modules) : null,
     beautifiedSource: beautified,
     ...(reconstructionSummary ? { reconstruction: reconstructionSummary } : {}),
   };
@@ -302,23 +301,7 @@ function decompileFile(filePath, options = {}) {
  * @returns {Promise<{modules: object[], metrics: object, witness: object|null, url: string, source: string}>}
  */
 async function decompileUrl(url, options = {}) {
-  // Only allow http: and https: to prevent local file access via file:// or
-  // other unexpected schemes (SSRF mitigation).
-  let parsedUrl;
-  try {
-    parsedUrl = new URL(url);
-  } catch {
-    throw new Error(`Invalid URL: ${url}`);
-  }
-  if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-    throw new Error(`Unsupported URL scheme "${parsedUrl.protocol}". Only http: and https: are allowed.`);
-  }
-  const resp = await fetch(url, { redirect: 'follow' });
-  if (!resp.ok) {
-    throw new Error(`Failed to fetch ${url} (HTTP ${resp.status})`);
-  }
-
-  const source = await resp.text();
+  const source = await fetchText(url);
   const result = decompileSource(source, options);
 
   return {
@@ -336,7 +319,7 @@ async function decompileUrl(url, options = {}) {
  * @param {string} [format='modules'] - 'modules', 'single', 'json'
  */
 function writeOutput(result, outputDir, format = 'modules') {
-  fs.mkdirSync(outputDir, { recursive: true });
+  ensureDirectory(outputDir);
 
   if (format === 'json') {
     const jsonResult = {
@@ -350,7 +333,7 @@ function writeOutput(result, outputDir, format = 'modules') {
       witness: result.witness,
       packageInfo: result.packageInfo || null,
     };
-    fs.writeFileSync(
+    writeNewFile(
       path.join(outputDir, 'decompiled.json'),
       JSON.stringify(jsonResult, null, 2),
     );
@@ -363,45 +346,29 @@ function writeOutput(result, outputDir, format = 'modules') {
       output += `// ─── Module: ${mod.name} (confidence: ${mod.confidence}) ───\n\n`;
       output += mod.content + '\n\n';
     }
-    fs.writeFileSync(path.join(outputDir, 'decompiled.js'), output);
+    writeNewFile(path.join(outputDir, 'decompiled.js'), output);
     return;
   }
 
   // Default: 'modules' format — one file per module
   // Supports hierarchical module names like 'tools/bash' -> tools/bash.js
   const resolvedOutputDir = path.resolve(outputDir);
+  const filenames = result.modules.map((mod, i) => moduleFilename(resolvedOutputDir, mod.name, i));
+  if (new Set(filenames).size !== filenames.length) throw new Error('Duplicate output path');
   for (let i = 0; i < result.modules.length; i++) {
-    const mod = result.modules[i];
-    // Sanitize module name: strip leading slashes/dots and path traversal
-    // sequences so a module named '../../evil' cannot write outside outputDir.
-    const safeName = mod.name.replace(/\.\.[/\\]/g, '').replace(/^[/\\]+/, '') || `module-${i + 1}`;
-    const header = `// Module: ${mod.name}\n// Confidence: ${mod.confidence}\n// Fragments: ${mod.fragments}\n\n`;
-
-    if (safeName.includes('/') || safeName.includes('\\')) {
-      // Hierarchical: create subdirectories
-      const candidate = path.resolve(resolvedOutputDir, safeName + '.js');
-      // Guard: ensure the resolved path is still inside outputDir
-      if (!candidate.startsWith(resolvedOutputDir + path.sep) && candidate !== resolvedOutputDir) {
-        continue;
-      }
-      fs.mkdirSync(path.dirname(candidate), { recursive: true });
-      fs.writeFileSync(candidate, header + mod.content);
-    } else {
-      const idx = String(i + 1).padStart(3, '0');
-      const fileName = `module-${idx}-${safeName}.js`;
-      fs.writeFileSync(path.join(resolvedOutputDir, fileName), header + mod.content);
-    }
+    // Write exact module bytes so the manifest can verify files without stripping headers.
+    writeNewFile(filenames[i], result.modules[i].content);
   }
 
   // Metrics
-  fs.writeFileSync(
+  writeNewFile(
     path.join(outputDir, 'metrics.json'),
     JSON.stringify(result.metrics, null, 2),
   );
 
   // Witness chain
   if (result.witness) {
-    fs.writeFileSync(
+    writeNewFile(
       path.join(outputDir, 'witness.json'),
       JSON.stringify(result.witness, null, 2),
     );

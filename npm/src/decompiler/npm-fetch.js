@@ -6,6 +6,7 @@
  */
 
 'use strict';
+const { fetchText } = require('./safe-fetch');
 
 const REGISTRY_BASE = 'https://registry.npmjs.org';
 const JSDELIVR_BASE = 'https://data.jsdelivr.com/v1/package/npm';
@@ -18,15 +19,7 @@ const UNPKG_BASE = 'https://unpkg.com';
  */
 async function fetchPackageInfo(packageName) {
   const url = `${REGISTRY_BASE}/${encodeURIComponent(packageName).replace('%40', '@')}`;
-  const resp = await fetch(url, {
-    headers: { Accept: 'application/json' },
-  });
-
-  if (!resp.ok) {
-    throw new Error(`Package "${packageName}" not found (HTTP ${resp.status})`);
-  }
-
-  const data = await resp.json();
+  const data = JSON.parse(await fetchText(url));
   const versions = Object.keys(data.versions || {}).reverse();
   const distTags = data['dist-tags'] || {};
   const latest = distTags.latest || versions[0] || '';
@@ -50,11 +43,7 @@ async function fetchPackageInfo(packageName) {
 async function fetchPackageFileList(packageName, version) {
   const encodedName = encodeURIComponent(packageName).replace('%40', '@');
   const url = `${JSDELIVR_BASE}/${encodedName}@${version}/flat`;
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    throw new Error(`Could not list files for ${packageName}@${version}`);
-  }
-  const data = await resp.json();
+  const data = JSON.parse(await fetchText(url));
   return (data.files || []);
 }
 
@@ -68,11 +57,7 @@ async function fetchPackageFileList(packageName, version) {
 async function fetchFileContent(packageName, version, filePath) {
   const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
   const url = `${UNPKG_BASE}/${packageName}@${version}/${cleanPath}`;
-  const resp = await fetch(url, { redirect: 'follow' });
-  if (!resp.ok) {
-    throw new Error(`Could not fetch ${cleanPath} from ${packageName}@${version} (HTTP ${resp.status})`);
-  }
-  return resp.text();
+  return fetchText(url);
 }
 
 /**

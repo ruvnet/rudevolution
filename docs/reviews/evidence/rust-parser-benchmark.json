@@ -1,0 +1,53 @@
+{
+  "command": "cargo bench --locked --bench bench_parser -- --warm-up-time 1 --measurement-time 2 --noplot",
+  "rows": [
+    {
+      "size": "100KB",
+      "meanNs": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 1492961.5565461456,
+          "upper_bound": 1528800.7562170373
+        },
+        "point_estimate": 1508440.7628995785,
+        "standard_error": 9284.92390414764
+      }
+    },
+    {
+      "size": "10KB",
+      "meanNs": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 163810.92894682084,
+          "upper_bound": 169398.13891049405
+        },
+        "point_estimate": 166096.47343774437,
+        "standard_error": 1470.5636208292813
+      }
+    },
+    {
+      "size": "1KB",
+      "meanNs": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 14338.813246549402,
+          "upper_bound": 14766.777096885507
+        },
+        "point_estimate": 14511.335786893513,
+        "standard_error": 113.96307633469229
+      }
+    },
+    {
+      "size": "1MB",
+      "meanNs": {
+        "confidence_interval": {
+          "confidence_level": 0.95,
+          "lower_bound": 14557152.732297085,
+          "upper_bound": 14754335.996680869
+        },
+        "point_estimate": 14653340.582005566,
+        "standard_error": 50303.47755488765
+      }
+    }
+  ]
+}

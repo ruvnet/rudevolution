@@ -2,7 +2,7 @@
 <h3 align="center">AI-Powered JavaScript Decompiler</h3>
 
 <p align="center">
-  <em>The first decompiler that understands code semantically, recovers original names with AI,<br/>proves every transformation with cryptographic witness chains, and gets smarter with every run.</em>
+  <em>JavaScript bundle analysis with graph partitioning, inferred names,<br/>and cryptographic integrity manifests.</em>
 </p>
 
 <p align="center">
@@ -14,8 +14,7 @@
 </p>
 
 <p align="center">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-59_passing-brightgreen?style=flat-square" />
-  <img alt="Accuracy" src="https://img.shields.io/badge/accuracy-95.7%25-brightgreen?style=flat-square" />
+  <a href="https://github.com/ruvnet/rudevolution/actions"><img alt="CI" src="https://github.com/ruvnet/rudevolution/actions/workflows/ci.yml/badge.svg" /></a>
   <img alt="Parse Rate" src="https://img.shields.io/badge/parse_rate-100%25-brightgreen?style=flat-square" />
   <img alt="Patterns" src="https://img.shields.io/badge/patterns-210-blue?style=flat-square" />
   <img alt="License" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" />
@@ -28,11 +27,32 @@
 
 **ruDevolution** is a next-generation JavaScript decompiler built in pure Rust. It takes minified, obfuscated, or bundled JavaScript — the kind produced by esbuild, webpack, Terser, or any bundler — and reconstructs readable source code with original module boundaries, meaningful variable names, and full cryptographic provenance.
 
-Unlike traditional decompilers that only reformat whitespace, ruDevolution uses **graph algorithms** (MinCut partitioning) to detect where modules originally split apart, **AI inference** (neural + 210 pattern rules) to predict what variables were originally called, and **Merkle witness chains** to mathematically prove that every line of output faithfully derives from the input. It learns from corrections, improves across runs, and can be trained on GPU for domain-specific accuracy.
+Unlike traditional decompilers that only reformat whitespace, ruDevolution uses **graph algorithms** (MinCut partitioning) to detect where modules originally split apart, **AI inference** (neural + 210 pattern rules) to predict what variables were originally called, and **witness manifests** to detect changes to recorded input and output bytes. Hashes do not prove semantic equivalence, correct name recovery, or authorship. It learns from corrections, improves across runs, and can be trained on GPU for domain-specific accuracy.
 
-**Put simply**: paste in unreadable code, get back organized, named, verified source — with a confidence score on every recovered name and a cryptographic proof that nothing was fabricated.
+**Put simply**: paste in unreadable code, get back organized, named, verified source — with a confidence score on every recovered name and an integrity record for the supplied artifacts.
 
 ---
+
+## Reproducible source checkout
+
+```bash
+git clone https://github.com/ruvnet/rudevolution.git
+cd rudevolution
+npm test
+npm run bench
+cargo test --locked
+cargo run --release --example run_on_cli -- ./bundle.js
+```
+
+The Node source API needs no installed dependencies for its core tests. The dashboard has its own lockfile and uses Node 22 or newer. The legacy `npm/bin/cli.js` is a RuVector monorepo CLI snapshot with missing sibling modules; this checkout does not package that CLI. Use `require('./npm/src/decompiler')` or the Rust example.
+
+Security compatibility changes:
+
+* Validation never executes supplied JavaScript. Changed source has `functionallyEquivalent: null`, meaning unverified. Runnable mode preserves bytes; readability reconstruction is still experimental.
+* Remote input is limited to HTTPS on `registry.npmjs.org`, `unpkg.com`, `cdn.jsdelivr.net` and `data.jsdelivr.com`, including redirects. Other sources must be downloaded separately and passed as local files. Remote responses are capped at 32 MiB and 30 seconds.
+* Node witness schema v2 binds source hash, module names, order and content hashes. Legacy manifests must be regenerated. Supply source and module bytes to `verifyWitnessChain(witness, source, modules)` and require both `sourceVerified` and `modulesVerified`.
+* Output files are created exclusively and contain exact module bytes. Use a fresh, caller-owned output directory; existing files and symlinks are rejected. Writes can leave partial output on failure.
+* Model weights are limited to 256 MiB with bounded rank, dimensions and layer counts. Shape mismatches, nonfinite values and duplicate tensors are rejected.
 
 ## 📦 Install
 
@@ -109,7 +129,7 @@ node my-custom-claude.js --version
 # → Still works!
 ```
 
-Every transform is **verified at build time** — if a change would break execution, it's automatically reverted. The witness chain proves nothing was added or removed from the original.
+Historical release artifacts require independent behavioral testing. Current Node runnable mode preserves original bytes and rejects unproven edits; it never executes inputs during validation. Readability mode remains heuristic and can change behavior.
 
 ---
 
@@ -137,7 +157,7 @@ Every transform is **verified at build time** — if a change would break execut
 - ❌ Does not redistribute original code
 - ❌ Does not violate terms of service (analyzing code you've installed is not prohibited)
 
-The **witness chain** provides cryptographic proof that every byte of output derives from the input — nothing fabricated, nothing added from external sources.
+The **witness manifest** records input and output hashes. Verify it against trusted source and actual output bytes; a self-consistent manifest alone is not a correctness or authenticity proof.
 
 ---
 
@@ -148,7 +168,7 @@ The **witness chain** provides cryptographic proof that every byte of output der
 | 🧩 **Module detection** | ✅ MinCut graph partitioning | ❌ None | Reconstructs original file structure |
 | 🔮 **Name recovery** | ✅ AI + 210 patterns | ⚠️ Generic (`a`, `b`, `c`) | Makes code actually readable |
 | 🧬 **Self-learning** | ✅ Gets smarter each run | ❌ Static rules | Accuracy improves over time |
-| 🔗 **Witness chains** | ✅ SHA3-256 Merkle proof | ❌ None | Proves output matches input |
+| 🔗 **Witness chains** | ✅ SHA3-256 Merkle proof | ❌ None | Detects recorded artifact changes |
 | 🗺️ **Source maps** | ✅ V3 (DevTools compatible) | ⚠️ Some | Debug in Chrome/VS Code |
 | 📊 **Confidence scores** | ✅ Per-name scoring | ❌ None | Know what to trust |
 | 🔄 **Cross-version analysis** | ✅ Compare releases | ❌ None | Track changes across versions |
@@ -314,7 +334,7 @@ Tested on Claude Code `cli.js` (11 MB, 27,477 declarations):
 ┌─── Phase 5: Witness ──┐
 │ 🔗 SHA3-256 hashing    │  Hash every module
 │ 🌳 Merkle tree         │  Chain all hashes
-│ ✅ Verify: output ⊆ input │  Cryptographic proof
+│ ✅ Verify: output ⊆ input │  Integrity record
 └───────────┬────────────┘
             ▼
    📖 Readable Source Code
@@ -325,17 +345,11 @@ Tested on Claude Code `cli.js` (11 MB, 27,477 declarations):
 
 ---
 
-## 🏆 SOTA Results
+## Research and evaluation status
 
-ruDevolution achieves **95.7% validation accuracy** on name inference — beating all prior work by a wide margin:
+The historical 95.7% training validation figure below has not been reproduced on a shared, held out benchmark against other systems. It must not be interpreted as a general name recovery accuracy or a state of the art ranking. Dataset differences make the former comparison table invalid.
 
-| System | Year | Name Accuracy | Module Detection | Witness Chain | Self-Learning |
-|--------|:----:|:-------------:|:----------------:|:------------:|:-------------:|
-| JSNice (ETH Zurich) | 2015 | 63.0% | ❌ | ❌ | ❌ |
-| DeGuard | 2017 | ~60% | ❌ | ❌ | ❌ |
-| DIRE | 2019 | 65.8% | ❌ | ❌ | ❌ |
-| VarCLR | 2022 | ~72% | ❌ | ❌ | ❌ |
-| **ruDevolution** | **2026** | **95.7%** | **✅ 1,029 modules** | **✅ SHA3-256** | **✅ 210 patterns** |
+See the [September 2026 review](docs/reviews/2026-09-security-performance.md) for primary research, measured local benchmarks, security findings and explicit limitations.
 
 ### Training Details
 
@@ -485,7 +499,7 @@ inferrer.learn_from_feedback(&feedback);
 ```rust
 let result = decompile(&source, &config)?;
 
-// The witness chain proves every output byte comes from the input
+// The witness chain records hashes; it does not prove semantics
 assert!(result.witness_chain.is_valid);
 println!("Source hash: {}", result.witness_chain.source_hash_hex);
 println!("Chain root:  {}", result.witness_chain.chain_root_hex);

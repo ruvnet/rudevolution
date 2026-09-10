@@ -415,13 +415,11 @@ describe('Runnable Reconstruction', () => {
     assert(result.stats.rejected >= 0, 'should report rejected count');
   });
 
-  it('applies safe style fixes', () => {
+  it('preserves bytes in runnable mode', () => {
     const { reconstructRunnable } = require('../src/decompiler/reconstructor');
     const input = 'var a = !0; var b = !1; var c = void 0;';
     const result = reconstructRunnable(input);
-    assert(result.code.includes('true'), '!0 -> true');
-    assert(result.code.includes('false'), '!1 -> false');
-    assert(result.code.includes('undefined'), 'void 0 -> undefined');
+    assertEq(result.code, input, 'unproven style changes must not be applied');
   });
 });
 
