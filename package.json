@@ -1,0 +1,10 @@
+{
+  "name": "rudevolution-source",
+  "version": "0.1.0",
+  "private": true,
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node npm/test/decompiler-reconstruction.js && node --test npm/test/security.test.js",
+    "bench": "node npm/bench/rename.js"
+  }
+}

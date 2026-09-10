@@ -1,140 +1,71 @@
-/**
- * witness.js - SHA-256 witness chain generation and verification.
- *
- * A witness chain is a Merkle-like structure that cryptographically proves
- * the decompiled output derives from a specific input bundle.
- *
- * Chain structure:
- *   root = H(source_hash || module_hashes[0] || ... || module_hashes[n])
- *
- * Each entry records:
- *   { hash, label, parent }
- * so the chain can be verified without re-running the decompiler.
- */
-
+/** SHA-256 integrity manifests. These do not prove semantic equivalence or authorship. */
 'use strict';
-
-const crypto = require('crypto');
-
-/**
- * Compute SHA-256 hash of a string or buffer.
- * @param {string|Buffer} data
- * @returns {string} hex-encoded hash
- */
-function sha256(data) {
-  return crypto.createHash('sha256').update(data).digest('hex');
+const crypto = require('node:crypto');
+const sha256 = data => crypto.createHash('sha256').update(data).digest('hex');
+const HASH = /^[a-f0-9]{64}$/;
+function rootHash(sourceHash, modules) {
+  return sha256(JSON.stringify(['rudevolution-witness-v2', sourceHash,
+    modules.map(m => [m.name, m.hash])]));
 }
-
-/**
- * Build a witness chain from source and decompiled modules.
- *
- * @param {string} source - original bundle source code
- * @param {Array<{name: string, content: string}>} modules - decompiled modules
- * @returns {{
- *   source_hash: string,
- *   module_hashes: Array<{name: string, hash: string}>,
- *   root: string,
- *   chain: Array<{hash: string, label: string, parent: string|null}>,
- *   created: string,
- *   algorithm: string
- * }}
- */
 function buildWitnessChain(source, modules) {
-  const sourceHash = sha256(source);
-  const chain = [];
-  const moduleHashes = [];
-
-  // Root node: the source hash
-  chain.push({
-    hash: sourceHash,
-    label: 'source',
-    parent: null,
+  const source_hash = sha256(source);
+  const names = new Set();
+  const module_hashes = modules.map(m => {
+    if (typeof m.name !== 'string' || !m.name || names.has(m.name)) {
+      throw new TypeError('Module names must be nonempty and unique');
+    }
+    names.add(m.name);
+    return { name: m.name, hash: sha256(m.content) };
   });
-
-  // One node per decompiled module
-  for (const mod of modules) {
-    const modHash = sha256(mod.content);
-    moduleHashes.push({ name: mod.name, hash: modHash });
-
-    chain.push({
-      hash: modHash,
-      label: `module:${mod.name}`,
-      parent: sourceHash,
-    });
-  }
-
-  // Compute Merkle root: H(source_hash || mod_hash_0 || ... || mod_hash_n)
-  const allHashes = sourceHash + moduleHashes.map((m) => m.hash).join('');
-  const root = sha256(allHashes);
-
-  chain.push({
-    hash: root,
-    label: 'root',
-    parent: sourceHash,
-  });
-
-  return {
-    source_hash: sourceHash,
-    module_hashes: moduleHashes,
-    root,
-    chain,
-    created: new Date().toISOString(),
-    algorithm: 'sha256',
-  };
+  const root = rootHash(source_hash, module_hashes);
+  return { version: 2, algorithm: 'sha256', source_hash, module_hashes, root,
+    chain: [{ hash: source_hash, label: 'source', parent: null },
+      ...module_hashes.map(m => ({ hash: m.hash, label: `module:${m.name}`, parent: source_hash })),
+      { hash: root, label: 'root', parent: source_hash }],
+    created: new Date().toISOString() };
 }
-
-/**
- * Verify a witness chain against a source file.
- *
- * @param {object} witness - the witness object (from buildWitnessChain)
- * @param {string} [sourceContent] - original source to verify against (optional)
- * @returns {{valid: boolean, chain_length: number, root: string, errors: string[]}}
- */
-function verifyWitnessChain(witness, sourceContent) {
+/** Optional source and module bytes are required for full artifact verification. */
+function verifyWitnessChain(witness, sourceContent, modules) {
   const errors = [];
-
-  if (!witness || !witness.chain || !witness.root) {
-    return { valid: false, chain_length: 0, root: '', errors: ['Missing witness data'] };
+  const invalid = message => ({ valid: false, chain_length: 0, root: '',
+    sourceVerified: false, modulesVerified: false, errors: [message] });
+  if (!witness || witness.version !== 2 || witness.algorithm !== 'sha256' ||
+      typeof witness.source_hash !== 'string' || !HASH.test(witness.source_hash) ||
+      typeof witness.root !== 'string' || !HASH.test(witness.root) ||
+      !Array.isArray(witness.module_hashes) || !Array.isArray(witness.chain)) {
+    return invalid('Invalid or unsupported witness schema; regenerate legacy manifests');
   }
-
-  // Verify source hash if content provided
-  if (sourceContent) {
-    const actualSourceHash = sha256(sourceContent);
-    if (actualSourceHash !== witness.source_hash) {
-      errors.push(
-        `Source hash mismatch: expected ${witness.source_hash}, got ${actualSourceHash}`,
-      );
-    }
+  const names = new Set();
+  for (const m of witness.module_hashes) {
+    if (!m || typeof m.name !== 'string' || !m.name || names.has(m.name) ||
+        typeof m.hash !== 'string' || !HASH.test(m.hash)) return invalid('Invalid module manifest');
+    names.add(m.name);
   }
-
-  // Verify chain integrity: each node's parent must exist in the chain
-  const hashSet = new Set(witness.chain.map((n) => n.hash));
-  for (const node of witness.chain) {
-    if (node.parent && !hashSet.has(node.parent)) {
-      errors.push(`Broken chain: node ${node.label} references missing parent ${node.parent}`);
-    }
+  if (rootHash(witness.source_hash, witness.module_hashes) !== witness.root) errors.push('Root mismatch');
+  const expected = [{ hash: witness.source_hash, label: 'source', parent: null },
+    ...witness.module_hashes.map(m => ({ hash: m.hash, label: `module:${m.name}`, parent: witness.source_hash })),
+    { hash: witness.root, label: 'root', parent: witness.source_hash }];
+  if (witness.chain.length !== expected.length || expected.some((n, i) => {
+    const actual = witness.chain[i];
+    return !actual || actual.hash !== n.hash || actual.label !== n.label || actual.parent !== n.parent;
+  })) errors.push('Chain topology mismatch');
+  let sourceVerified = false;
+  if (sourceContent !== undefined) {
+    sourceVerified = (typeof sourceContent === 'string' || Buffer.isBuffer(sourceContent)) &&
+      sha256(sourceContent) === witness.source_hash;
+    if (!sourceVerified) errors.push('Source hash mismatch');
   }
-
-  // Recompute root from module hashes
-  if (witness.module_hashes && witness.source_hash) {
-    const allHashes =
-      witness.source_hash + witness.module_hashes.map((m) => m.hash).join('');
-    const expectedRoot = sha256(allHashes);
-    if (expectedRoot !== witness.root) {
-      errors.push(`Root mismatch: expected ${expectedRoot}, got ${witness.root}`);
-    }
+  let modulesVerified = false;
+  if (modules !== undefined) {
+    modulesVerified = Array.isArray(modules) && modules.length === witness.module_hashes.length &&
+      witness.module_hashes.every((m, i) => {
+        const actual = modules[i];
+        return actual && actual.name === m.name &&
+          (typeof actual.content === 'string' || Buffer.isBuffer(actual.content)) && sha256(actual.content) === m.hash;
+      });
+    if (!modulesVerified) errors.push('Module content, order or name mismatch');
   }
-
-  return {
-    valid: errors.length === 0,
-    chain_length: witness.chain.length,
-    root: witness.root,
-    errors,
-  };
+  return { valid: errors.length === 0, chain_length: witness.chain.length, root: witness.root,
+    sourceVerified, modulesVerified, errors };
 }
-
-module.exports = {
-  sha256,
-  buildWitnessChain,
-  verifyWitnessChain,
-};
+module.exports = { sha256, buildWitnessChain, verifyWitnessChain };

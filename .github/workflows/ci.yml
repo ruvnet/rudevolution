@@ -1,0 +1,34 @@
+name: Security and correctness
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm test
+      - run: npm run bench
+      - run: npm ci --ignore-scripts
+        working-directory: dashboard
+      - run: npm audit --audit-level=moderate
+        working-directory: dashboard
+      - run: npm run build
+        working-directory: dashboard
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - run: rustup update stable --no-self-update
+      - run: cargo +stable test --locked
+      - run: cargo +stable check --locked --features neural
+      - run: cargo +stable bench --locked --no-run

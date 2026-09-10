@@ -326,14 +326,13 @@ function deduplicateName(name, usedNames) {
 /**
  * Runnable reconstruction — applies renames one at a time, validating
  * each one. Trades completeness for correctness: the output is
- * guaranteed to parse and produce the same exports as the original.
+ * preserved byte-for-byte until a scope-safe transform can be certified.
  *
  * @param {string} source - beautified JavaScript source
  * @param {object} [options]
  * @param {string} [options.patternPath] - path to patterns JSON
  * @param {boolean} [options.addComments=true] - add JSDoc comments
  * @param {number} [options.minConfidence=0.3]
- * @param {number} [options.timeoutMs=1000] - VM timeout for equivalence checks
  * @returns {{code: string, appliedRenames: Array, rejectedRenames: Array, runnable: boolean, stats: object}}
  */
 function reconstructRunnable(source, options = {}) {
@@ -341,54 +340,12 @@ function reconstructRunnable(source, options = {}) {
     patternPath,
     addComments = true,
     minConfidence = 0.3,
-    timeoutMs = 1000,
   } = options;
 
-  const vm = require('vm');
-
-  // Helper: check syntax validity
-  function isSyntacticallyValid(code) {
-    try {
-      new Function(code);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  // Helper: check functional equivalence via sandboxed VM
-  function isFunctionallyEquivalent(original, modified) {
-    try {
-      const makeSandbox = () => ({
-        module: { exports: {} },
-        exports: {},
-        require: () => ({}),
-        console: { log() {}, error() {}, warn() {}, info() {} },
-        process: { env: {}, argv: [], cwd: () => '/' },
-        setTimeout: () => {},
-        setInterval: () => {},
-        clearTimeout: () => {},
-        clearInterval: () => {},
-        Buffer: { from: () => Buffer.alloc(0), alloc: () => Buffer.alloc(0) },
-        global: {},
-        __dirname: '/',
-        __filename: '/test.js',
-      });
-
-      const origCtx = vm.createContext(makeSandbox());
-      const modCtx = vm.createContext(makeSandbox());
-
-      vm.runInContext(original, origCtx, { timeout: timeoutMs });
-      vm.runInContext(modified, modCtx, { timeout: timeoutMs });
-
-      const origKeys = JSON.stringify(Object.keys(origCtx.module.exports || {}).sort());
-      const modKeys = JSON.stringify(Object.keys(modCtx.module.exports || {}).sort());
-
-      return origKeys === modKeys;
-    } catch {
-      return false;
-    }
-  }
+  const { checkSyntaxValidity } = require('./validator');
+  const isSyntacticallyValid = code => checkSyntaxValidity(code).valid;
+  // Until scope-safe transformations are proven, preserve the original bytes.
+  const isFunctionallyEquivalent = (original, modified) => original === modified;
 
   // 1. Collect all candidate renames
   const minifiedIds = findMinifiedIdentifiers(source);
@@ -436,32 +393,23 @@ function reconstructRunnable(source, options = {}) {
         usedNames.add(inferredName);
         appliedRenames.push({ ...candidate, inferred: inferredName });
       } else {
-        rejectedRenames.push({ ...candidate, reason: 'breaks behavior' });
+        rejectedRenames.push({ ...candidate, reason: 'equivalence unverified' });
       }
     } else {
       rejectedRenames.push({ ...candidate, reason: 'syntax error' });
     }
   }
 
-  // 4. Apply safe style fixes (semantic equivalents, always safe)
-  current = applySafeStyleFixes(current);
-
-  // 5. Upgrade var -> const/let
-  current = upgradeVarDeclarations(current);
-
-  // 6. Add JSDoc comments (does not affect execution)
-  let commentsAdded = 0;
-  if (addComments) {
-    const result = addJSDocComments(current, appliedRenames);
-    current = result.code;
-    commentsAdded = result.count;
-  }
+  // Regex style edits can change literals, hoisting and shadowed undefined.
+  // Runnable mode fails closed and leaves unproven edits unapplied.
+  const commentsAdded = 0;
 
   return {
     code: current,
     appliedRenames,
     rejectedRenames,
-    runnable: true,
+    runnable: isSyntacticallyValid(current),
+    verification: 'identity-only',
     comments: commentsAdded,
     stats: {
       totalCandidates: candidates.length,
