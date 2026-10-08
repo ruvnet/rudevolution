@@ -7,6 +7,7 @@ import { VersionMetricsCards } from '../components/MetricsCard';
 import { SearchBar, SearchResults } from '../components/SearchBar';
 import { VersionSelector } from '../components/VersionSelector';
 import { DownloadMenu } from '../components/DownloadMenu';
+import { DashboardIntro } from '../components/DashboardIntro';
 
 interface ExplorerProps {
   versions: VersionData[];
@@ -49,6 +50,7 @@ export function Explorer({ versions, showToast }: ExplorerProps) {
 
   return (
     <div className="max-w-[1600px] mx-auto p-4">
+      <DashboardIntro />
       {/* Search */}
       <div className="mb-4">
         <SearchBar versions={versions} onResults={setSearchResults} />

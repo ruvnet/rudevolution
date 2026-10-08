@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.js";
 
 @layer base {
   ::-webkit-scrollbar {
@@ -33,4 +32,13 @@
   .glow-border {
     box-shadow: 0 0 15px rgba(0, 229, 255, 0.1);
   }
+}
+
+/* Ambient graph motion uses no JS and remains readable without animation. */
+@keyframes visual-drift { to { stroke-dashoffset: -54; } }
+@keyframes visual-pulse { 0%, 100% { opacity: .48; } 50% { opacity: 1; } }
+.visual-trace { stroke-dasharray: 5 12; animation: visual-drift 3.8s linear infinite; }
+.visual-pulse { animation: visual-pulse 3.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .visual-trace, .visual-pulse { animation: none; }
 }

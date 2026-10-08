@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import type { VersionData, PageId } from './types';
-import { Explorer } from './pages/Explorer';
-import { Decompiler } from './pages/Decompiler';
-import { RvfViewer } from './pages/RvfViewer';
+// Split the heavy decompiler and archive views into route-specific chunks.
+const Explorer = lazy(() => import('./pages/Explorer').then((mod) => ({ default: mod.Explorer })));
+const Decompiler = lazy(() => import('./pages/Decompiler').then((mod) => ({ default: mod.Decompiler })));
+const RvfViewer = lazy(() => import('./pages/RvfViewer').then((mod) => ({ default: mod.RvfViewer })));
 
 const VERSION_IDS = ['v0.2.x', 'v1.0.x', 'v2.0.x', 'v2.1.x'];
 const DATA_BASE = '/data';
@@ -51,19 +52,28 @@ const NAV_ITEMS: { id: PageId; label: string; path: string }[] = [
 
 export default function App() {
   const [versions, setVersions] = useState<VersionData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [archiveStatus, setArchiveStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [archiveError, setArchiveError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const location = useLocation();
 
+  // NPM analysis is independent of the archived Claude Code data. Fetch archives
+  // only when an archive-backed view is first opened; reuse them across routes.
+  const needsArchives = location.pathname === '/' || location.pathname.startsWith('/rvf');
   useEffect(() => {
+    if (!needsArchives || archiveStatus !== 'idle') return;
+    setArchiveStatus('loading');
     Promise.all(VERSION_IDS.map(loadVersionData))
-      .then(setVersions)
-      .catch((err) => {
-        console.error('Failed to load version data:', err);
-        setVersions([]);
+      .then((data) => {
+        setVersions(data);
+        setArchiveStatus('ready');
       })
-      .finally(() => setLoading(false));
-  }, []);
+      .catch((err) => {
+        console.error('Failed to load archive data:', err);
+        setArchiveError(err instanceof Error ? err.message : 'Archive data unavailable');
+        setArchiveStatus('error');
+      });
+  }, [needsArchives, archiveStatus]);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -76,12 +86,13 @@ export default function App() {
       <header className="flex-shrink-0 border-b border-surface-600 bg-surface-800/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-[1600px] mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-cyan to-accent-purple flex items-center justify-center text-black font-bold text-sm">
-              D
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-cyan to-accent-purple flex items-center justify-center text-black font-bold text-xl" aria-hidden="true">
+              ∞
             </div>
             <h1 className="text-base font-semibold text-gray-100">
-              Decompiler <span className="text-accent-cyan glow-cyan">Dashboard</span>
+              ru<span className="text-accent-cyan glow-cyan">Devolution</span>
             </h1>
+            <span className="hidden lg:block text-xs tracking-widest uppercase text-gray-500">Source intelligence</span>
           </div>
           <nav className="flex gap-1">
             {NAV_ITEMS.map((item) => {
@@ -109,19 +120,34 @@ export default function App() {
 
       {/* Main content */}
       <main className="flex-1">
-        {loading ? (
-          <div className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <div className="w-8 h-8 border-2 border-accent-cyan/30 border-t-accent-cyan rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-sm text-gray-500">Loading version data...</p>
+        {needsArchives && archiveStatus !== 'ready' ? (
+          archiveStatus === 'error' ? (
+            <div className="max-w-xl mx-auto my-16 rounded-lg border border-red-500/30 bg-surface-800 p-6 text-center">
+              <p className="font-semibold text-red-300">Archive data unavailable</p>
+              <p className="mt-2 text-sm text-gray-400">{archiveError}</p>
+              <button
+                className="mt-4 rounded-lg border border-accent-cyan/40 px-4 py-2 text-accent-cyan hover:bg-accent-cyan/10"
+                onClick={() => { setArchiveError(null); setArchiveStatus('idle'); }}
+              >
+                Retry loading
+              </button>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center justify-center h-96" role="status" aria-live="polite">
+              <div className="text-center">
+                <div className="w-8 h-8 border-2 border-accent-cyan/30 border-t-accent-cyan rounded-full animate-spin motion-reduce:animate-none mx-auto mb-3" />
+                <p className="text-sm text-gray-500">Loading historical archive…</p>
+              </div>
+            </div>
+          )
         ) : (
-          <Routes>
-            <Route path="/" element={<Explorer versions={versions} showToast={showToast} />} />
-            <Route path="/decompiler" element={<Decompiler showToast={showToast} />} />
-            <Route path="/rvf" element={<RvfViewer versions={versions} showToast={showToast} />} />
-          </Routes>
+          <Suspense fallback={<div role="status" className="p-10 text-center text-sm text-gray-500">Opening workspace…</div>}>
+            <Routes>
+              <Route path="/" element={<Explorer versions={versions} showToast={showToast} />} />
+              <Route path="/decompiler" element={<Decompiler showToast={showToast} />} />
+              <Route path="/rvf" element={<RvfViewer versions={versions} showToast={showToast} />} />
+            </Routes>
+          </Suspense>
         )}
       </main>
 

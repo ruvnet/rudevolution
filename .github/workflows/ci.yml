@@ -16,13 +16,14 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: ${{ matrix.node }}
+      - run: python3 scripts/check_visuals.py
       - run: npm test
       - run: npm run bench
       - run: npm ci --ignore-scripts
         working-directory: dashboard
-      - run: npm audit --audit-level=moderate
-        working-directory: dashboard
       - run: npm run build
+        working-directory: dashboard
+      - run: npm audit --audit-level=moderate
         working-directory: dashboard
   rust:
     runs-on: ubuntu-latest
