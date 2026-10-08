@@ -21,9 +21,9 @@ jobs:
       - run: npm run bench
       - run: npm ci --ignore-scripts
         working-directory: dashboard
-      - run: npm audit --audit-level=moderate
-        working-directory: dashboard
       - run: npm run build
+        working-directory: dashboard
+      - run: npm audit --audit-level=moderate
         working-directory: dashboard
   rust:
     runs-on: ubuntu-latest
