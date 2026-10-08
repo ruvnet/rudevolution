@@ -1,37 +1,39 @@
-<h1 align="center">ruDevolution</h1>
-<h3 align="center">AI-Powered JavaScript Decompiler</h3>
+<p align="center">
+  <img src="docs/assets/rudevolution-hero.svg" width="100%" alt="Animated ruDevolution header: a minified JavaScript bundle is analyzed as a reference graph, producing candidate modules with confidence metadata." />
+</p>
+
+<h3 align="center">JavaScript bundle decompilation and source intelligence</h3>
+
+<p align="center">Analyze structure, infer useful names, and record content integrity without executing untrusted JavaScript.</p>
 
 <p align="center">
-  <em>JavaScript bundle analysis with graph partitioning, inferred names,<br/>and cryptographic integrity manifests.</em>
+  <a href="https://github.com/ruvnet/rudevolution/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/ruvnet/rudevolution/actions/workflows/ci.yml/badge.svg" /></a>
+  <img alt="Rust" src="https://img.shields.io/badge/core-Rust-orange?style=flat-square" />
+  <img alt="License MIT" src="https://img.shields.io/badge/license-MIT-3e9acb?style=flat-square" />
+  <img alt="Static analysis" src="https://img.shields.io/badge/input-static%20analysis-44bdaf?style=flat-square" />
 </p>
 
 <p align="center">
-  🧠 MinCut Module Detection &bull;
-  🔮 AI Name Recovery &bull;
-  🔗 Cryptographic Witness Chains &bull;
-  📊 Confidence Scoring &bull;
-  🧬 Self-Learning
+  <a href="#reproducible-source-checkout">Run locally</a> ·
+  <a href="#-how-it-works">Explore the pipeline</a> ·
+  <a href="#-features">Capabilities</a> ·
+  <a href="dashboard/">Dashboard</a> ·
+  <a href="docs/visuals.md">Animated diagrams</a>
 </p>
 
-<p align="center">
-  <a href="https://github.com/ruvnet/rudevolution/actions"><img alt="CI" src="https://github.com/ruvnet/rudevolution/actions/workflows/ci.yml/badge.svg" /></a>
-  <img alt="Parse Rate" src="https://img.shields.io/badge/parse_rate-100%25-brightgreen?style=flat-square" />
-  <img alt="Patterns" src="https://img.shields.io/badge/patterns-210-blue?style=flat-square" />
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" />
-  <img alt="Rust" src="https://img.shields.io/badge/rust-pure-orange?style=flat-square" />
-</p>
-
----
+> **Evidence first.** Recovered modules and names are hypotheses. A valid content witness detects changes to recorded bytes; it does not establish original intent, behavioral equivalence, or authorship.
 
 ## 🧠 What is ruDevolution?
 
-**ruDevolution** is a next-generation JavaScript decompiler built in pure Rust. It takes minified, obfuscated, or bundled JavaScript — the kind produced by esbuild, webpack, Terser, or any bundler — and reconstructs readable source code with original module boundaries, meaningful variable names, and full cryptographic provenance.
+ruDevolution analyzes JavaScript bundles produced by common bundlers and minifiers. Its Rust pipeline scans declarations, builds a weighted reference graph, proposes module boundaries using graph partitioning, infers candidate identifiers, and emits source maps, confidence metadata, and SHA3-256 integrity witnesses.
 
-Unlike traditional decompilers that only reformat whitespace, ruDevolution uses **graph algorithms** (MinCut partitioning) to detect where modules originally split apart, **AI inference** (neural + 210 pattern rules) to predict what variables were originally called, and **witness manifests** to detect changes to recorded input and output bytes. Hashes do not prove semantic equivalence, correct name recovery, or authorship. It learns from corrections, improves across runs, and can be trained on GPU for domain-specific accuracy.
+It includes a standalone Rust library, a Node analysis API, and a browser dashboard for inspecting archived samples and npm packages. They are distinct implementations; the browser experience is not a WASM build of the Rust engine. Name inference, partitioning, and formatting are heuristic and may change program behavior.
 
-**Put simply**: paste in unreadable code, get back organized, named, verified source — with a confidence score on every recovered name and an integrity record for the supplied artifacts.
+<p align="center">
+  <img src="docs/assets/rudevolution-intro.svg" width="100%" alt="Three-stage animated introduction: compacted JavaScript, inferred graph, and inspectable candidate modules accompanied by confidence and integrity records." />
+</p>
 
----
+**Understand the output:** inspect proposed modules and names, use confidence to prioritize review, and compare witness data against separately trusted input bytes. See the [security and performance review](docs/reviews/2026-09-security-performance.md) for confirmed findings, benchmarks, and limitations.
 
 ## Reproducible source checkout
 
@@ -75,7 +77,7 @@ npx ruvector decompile <package>
 npx ruvector decompile @anthropic-ai/claude-code
 ```
 
-That's it. One command → 878 modules, 100% valid JavaScript, cryptographic witness chain.
+This uses the separate RuVector npm CLI. To test this checkout directly, use the local Node source API or the Rust example above.
 
 📥 **[Download pre-built Claude Code decompilation →](https://github.com/ruvnet/rudevolution/releases/tag/v0.1.0-claude-code-v2.0.62)**
 
@@ -86,13 +88,15 @@ npx ruvector decompile ./bundle.min.js      # local file
 npx ruvector decompile https://unpkg.com/x  # URL
 ```
 
-### Claude Code Example Output
+### Historical Claude Code Example Output
+
+This example comes from an older release; it is **not** a benchmark or accuracy guarantee for the current checkout:
 
 ```
 Phase 1 (Parse):     3.2s  — 27,477 declarations found
 Phase 2 (Graph):     0.4s  — 353,323 reference edges
 Phase 3 (Partition): 0.9s  — 1,029 modules (Louvain community detection)
-Phase 4 (Infer):    13.4s  — 25,465 names recovered (95.7% accuracy)
+Phase 4 (Infer):    13.4s  — 25,465 name proposals (accuracy not independently established)
 Phase 8 (Validate):  878/878 parse (100%) — auto-fixed
 
 Output: source/ (878 .js files) + witness.json + metrics.json
@@ -110,9 +114,9 @@ Every major Claude Code version, decompiled and downloadable:
 | v1.0.128 | 8.9 MB | 16,593 | Agent tool, WebFetch, hooks system, context compaction | [Download](https://github.com/ruvnet/rudevolution/releases/tag/v0.1.0-claude-code-v1.0.128) |
 | v0.2.126 | 6.9 MB | 13,869 | Core architecture, tools, MCP client, permissions | [Download](https://github.com/ruvnet/rudevolution/releases/tag/v0.1.0-claude-code-v0.2.126) |
 
-### 🏃 It Runs. It's Modifiable.
+### 🏃 Historical Runnable Artifact
 
-The decompiled output isn't just readable — **it's a fully functional drop-in replacement:**
+An older release demonstrated a runnable artifact for one CLI version. This does **not** prove that other transformed outputs are functionally equivalent:
 
 ```bash
 # Download the decompiled Claude Code
@@ -133,50 +137,25 @@ Historical release artifacts require independent behavioral testing. Current Nod
 
 ---
 
-## ⚖️ Legal Basis
+## ⚖️ Legal and responsible use
 
-**Reverse engineering published software for interoperability is legal** in most jurisdictions:
+Reverse engineering rules vary by jurisdiction, license, purpose, and contract. Some laws provide limited interoperability and research exceptions, but these are **not blanket permissions** to redistribute third-party code or circumvent access controls. Consult qualified counsel for your use case.
 
-| Jurisdiction | Law | What It Allows |
-|-------------|-----|----------------|
-| 🇺🇸 **United States** | DMCA §1201(f), Copyright Act §117 | Reverse engineering for interoperability, security research, and understanding how software you own a copy of works |
-| 🇪🇺 **European Union** | Software Directive (2009/24/EC), Art. 6 | Decompilation for interoperability without authorization from the rightholder |
-| 🇬🇧 **United Kingdom** | Copyright, Designs and Patents Act 1988, §50B | Decompilation for interoperability purposes |
-| 🇦🇺 **Australia** | Copyright Act 1968, §47D | Reverse engineering for interoperability |
-
-**Key principles:**
-- 📦 **Published npm packages run on your machine** — you have a legitimate copy
-- 🔍 **Analysis for understanding** — learning how software works is fair use
-- 🔗 **Interoperability** — building extensions, MCP servers, and integrations requires understanding the interface
-- 🔐 **No circumvention** — we analyze the published JavaScript, not bypassing DRM or encryption
-- 📜 **No redistribution of original code** — the decompiler outputs *your analysis*, not a copy of the original
-
-**What ruDevolution does NOT do:**
-- ❌ Does not bypass authentication or DRM
-- ❌ Does not access unpublished source code
-- ❌ Does not redistribute original code
-- ❌ Does not violate terms of service (analyzing code you've installed is not prohibited)
-
-The **witness manifest** records input and output hashes. Verify it against trusted source and actual output bytes; a self-consistent manifest alone is not a correctness or authenticity proof.
-
----
+ruDevolution statically analyzes supplied JavaScript. It grants no rights to proprietary source and does not authenticate source origin. Respect licenses, access restrictions, and organizational policies. A cryptographic witness is not a signature, a trusted timestamp, or a semantic correctness proof.
 
 ## ✨ Features
 
-| Feature | ruDevolution | Traditional Decompilers | Why It Matters |
-|---------|:-----------:|:----------------------:|----------------|
-| 🧩 **Module detection** | ✅ MinCut graph partitioning | ❌ None | Reconstructs original file structure |
-| 🔮 **Name recovery** | ✅ AI + 210 patterns | ⚠️ Generic (`a`, `b`, `c`) | Makes code actually readable |
-| 🧬 **Self-learning** | ✅ Gets smarter each run | ❌ Static rules | Accuracy improves over time |
-| 🔗 **Witness chains** | ✅ SHA3-256 Merkle proof | ❌ None | Detects recorded artifact changes |
-| 🗺️ **Source maps** | ✅ V3 (DevTools compatible) | ⚠️ Some | Debug in Chrome/VS Code |
-| 📊 **Confidence scores** | ✅ Per-name scoring | ❌ None | Know what to trust |
-| 🔄 **Cross-version analysis** | ✅ Compare releases | ❌ None | Track changes across versions |
-| 🏎️ **Performance** | ✅ 11MB in ~26s | ⚠️ Varies | Production-ready speed |
-| 🤖 **Neural inference** | ✅ GPU-trained model | ❌ None | Predicts original names |
-| 📦 **RVF containers** | ✅ Binary cognitive format | ❌ None | Portable, searchable, provable |
+| Capability | Implementation | Evidence boundary |
+|:--|:--|:--|
+| Candidate module detection | Reference graph with MinCut / Louvain | Boundaries are inferred, not original ground truth |
+| Identifier proposals | Pattern corpus and optional neural inference | Per-name confidence is not calibrated accuracy |
+| Source maps and formatting | V3 maps and readable output | Formatting may alter behavior |
+| Human-guided learning | Corrections can inform later predictions | Improvements need held-out evaluation |
+| Integrity witnesses | SHA3-256 content hashes and Merkle chain | Compare against trusted bytes; not a signature |
+| Cross-version exploration | Dashboard of archived analyses | Examples are historical third-party artifacts |
+| Node API and Rust crate | Independently usable local interfaces | Not identical engines or guaranteed CLI replacements |
 
----
+See the [security and performance review](docs/reviews/2026-09-security-performance.md) for reproducible limits.
 
 ## 🚀 Quick Start
 
@@ -226,24 +205,24 @@ claude mcp add ruvector -- npx ruvector mcp
 
 ```bash
 # Full pipeline with MinCut + neural inference + witness chains
-cargo run --release -p ruvector-decompiler --example run_on_cli -- bundle.min.js
+cargo run --release --example run_on_cli -- bundle.min.js
 
 # Decompile Claude Code CLI (11MB)
-cargo run --release -p ruvector-decompiler --example run_on_cli -- \
+cargo run --release --example run_on_cli -- \
   $(npm root -g)/@anthropic-ai/claude-code/cli.js
 ```
 
 ### With the dashboard UI
 
 ```bash
-cd examples/decompiler-dashboard
+cd dashboard
 npm install && npm run dev
 # Open http://localhost:5173 — browse versions, decompile packages, view RVF containers
 ```
 
 ### What You Can Decompile
 
-Works on any npm package — including closed-source AI and cloud CLIs:
+Analysis works when an accessible, suitable bundle can be obtained. Coverage depends on packaging, syntax, and engine; these third-party examples are not guarantees:
 
 <details>
 <summary><strong>📋 Supported packages (click to expand)</strong></summary>
@@ -286,7 +265,7 @@ npx ruvector decompile webpack
 
 ## 📊 Performance
 
-Tested on Claude Code `cli.js` (11 MB, 27,477 declarations):
+Historical run on one Claude Code `cli.js` sample (11 MB, 27,477 declarations). **Not a cross-system or general accuracy benchmark:**
 
 | Phase | Time | What It Does |
 |-------|------|-------------|
@@ -303,45 +282,25 @@ Tested on Claude Code `cli.js` (11 MB, 27,477 declarations):
 
 ### The 5-Phase Pipeline
 
-```
-📄 Minified Bundle
-       │
-       ▼
-┌─── Phase 1: Parse ───┐
-│ 🔍 Find declarations  │  Regex + single-pass scanner
-│ 📝 Extract strings    │  memchr SIMD acceleration
-│ 🔗 Map references     │  Who calls whom?
-└───────────┬───────────┘
-            ▼
-┌─── Phase 2: Graph ───┐
-│ 🕸️ Build ref graph    │  Nodes = declarations
-│ ⚖️ Weight edges       │  Edges = reference frequency
-└───────────┬───────────┘
-            ▼
-┌─── Phase 3: Partition ─┐
-│ ✂️ MinCut / Louvain     │  <5K nodes: exact MinCut
-│ 📁 Detect modules      │  ≥5K nodes: Louvain O(n log n)
-│ 🏷️ Name modules        │  Based on dominant strings
-└───────────┬────────────┘
-            ▼
-┌─── Phase 4: Infer ────┐
-│ 🤖 Neural model        │  GPU-trained transformer
-│ 📚 Training corpus     │  210 domain patterns
-│ 🔤 Pattern matching    │  String context + properties
-│ 📊 Confidence scoring  │  HIGH / MEDIUM / LOW
-└───────────┬────────────┘
-            ▼
-┌─── Phase 5: Witness ──┐
-│ 🔗 SHA3-256 hashing    │  Hash every module
-│ 🌳 Merkle tree         │  Chain all hashes
-│ ✅ Verify: output ⊆ input │  Integrity record
-└───────────┬────────────┘
-            ▼
-   📖 Readable Source Code
-   🗺️ V3 Source Map
-   🔗 Witness Chain
-   📊 Confidence Report
-```
+<p align="center">
+  <img src="docs/assets/rudevolution-pipeline.svg" width="100%" alt="Animated five-stage pipeline: parse declarations, build a weighted reference graph, partition candidate modules, infer names with confidence, and record a SHA3-256 witness." />
+</p>
+
+1. **Parse:** Scan supplied source to extract declarations, strings, and candidate references.
+2. **Graph:** Build weighted edges representing detected relationships.
+3. **Partition:** Group related declarations into candidate module boundaries.
+4. **Infer:** Propose human-readable names with confidence metadata.
+5. **Witness:** Hash recorded artifacts into an integrity record verifiable against trusted bytes.
+
+### Integrity and verification boundaries
+
+<p align="center">
+  <img src="docs/assets/rudevolution-trust.svg" width="100%" alt="Animated two-panel comparison: a cryptographic witness can support byte integrity, but not semantic equivalence, exact original names, or authenticated authorship." />
+</p>
+
+Use hashes and strict schema checks to detect tampering. Use separate held-out ground truth, differential tests, and isolated execution to assess behavior. Never execute untrusted input JavaScript as a shortcut to validation.
+
+See [visual design and test constraints](docs/visuals.md) for the text alternatives and SVG validation.
 
 ---
 
@@ -455,6 +414,10 @@ let v2 = decompile(&v2_source, &config)?;
 <details>
 <summary><strong>🧬 Tutorial: Self-Learning Feedback Loop</strong></summary>
 
+<p align="center">
+  <img src="docs/assets/rudevolution-learning.svg" width="100%" alt="A four-stage animated feedback loop: human-reviewed corrections, learned patterns, candidate inference, and held-out evaluation." />
+</p>
+
 ### Train from ground truth
 
 If you know the original source for a minified bundle:
@@ -545,7 +508,7 @@ let config = DecompileConfig {
 
 let result = decompile(&source, &config)?;
 // Neural inference runs first, falls back to patterns
-// Expect 60-80% name accuracy vs 5% without model
+// Evaluate name recovery against your own held-out ground truth
 ```
 
 ### How the model works
@@ -634,46 +597,32 @@ let config = DecompileConfig {
 
 ## 🏛️ Architecture
 
-```
-crates/ruvector-decompiler/
-├── src/
-│   ├── lib.rs           # 🎯 Public API: decompile()
-│   ├── parser.rs        # 🔍 Single-pass JS scanner (memchr + lookup table)
-│   ├── graph.rs         # 🕸️ Reference graph construction
-│   ├── partitioner.rs   # ✂️ MinCut + Louvain community detection
-│   ├── inferrer.rs      # 🔮 Name inference (neural + patterns + learning)
-│   ├── training.rs      # 🧬 Training corpus (210 patterns, JSON-loadable)
-│   ├── sourcemap.rs     # 🗺️ V3 source map generation (VLQ encoding)
-│   ├── beautifier.rs    # ✨ Code formatting and indentation
-│   ├── witness.rs       # 🔗 SHA3-256 Merkle witness chains
-│   ├── types.rs         # 📐 Core types and config
-│   └── error.rs         # ❌ Error handling
-├── data/
-│   └── claude-code-patterns.json  # 📚 210 domain-specific patterns
-├── tests/
-│   ├── integration.rs   # ✅ 8 integration tests
-│   ├── ground_truth.rs  # 🎯 5 fixture accuracy tests
-│   └── real_world.rs    # 🌍 3 OSS comparison tests
-├── benches/
-│   ├── bench_parser.rs  # ⚡ Parser benchmarks (1KB-1MB)
-│   └── bench_pipeline.rs # ⚡ Full pipeline benchmarks
-└── examples/
-    └── run_on_cli.rs    # 🖥️ CLI runner for real bundles
+```text
+rudevolution/
+├── src/                # Rust parser, graph, partitioner, inference, witness
+├── npm/src/decompiler/ # Node analysis and reconstruction API
+├── dashboard/          # React/Vite browser explorer
+├── docs/
+│   ├── adr/            # Technical decisions
+│   ├── assets/         # Accessible animated SVGs
+│   ├── reviews/        # Threat model, benchmarks, limitations
+│   └── visuals.md      # Visual semantics and tests
+├── scripts/            # Training, reproducibility and validation
+├── tests/              # Rust tests
+└── .github/workflows/  # CI
 ```
 
----
+These diagrams describe the conceptual Rust pipeline; they do not assert feature parity across the Node and browser implementations.
 
 ## 📚 Related
 
-- [ADR-133: Claude Code Source Analysis](../../docs/adr/ADR-133-claude-code-source-analysis.md)
-- [ADR-134: RuVector Deep Integration](../../docs/adr/ADR-134-ruvector-claude-code-deep-integration.md)
-- [ADR-135: MinCut Decompiler Architecture](../../docs/adr/ADR-135-mincut-decompiler-with-witness-chains.md)
-- [ADR-136: GPU-Trained Deobfuscation Model](../../docs/adr/ADR-136-gpu-trained-deobfuscation-model.md)
-- [Research: SOTA Decompiler Approaches](../../docs/research/claude-code-rvsource/20-sota-decompiler-research.md)
-- [Research: Model Weight Analysis](../../docs/research/claude-code-rvsource/21-model-weight-analysis.md)
-- [Dashboard: Decompiler Explorer](../../examples/decompiler-dashboard/)
-
----
+* [ADR 135: graph partitioning and witness design](docs/adr/ADR-135-mincut-decompiler-with-witness-chains.md)
+* [ADR 136: optional learned name inference](docs/adr/ADR-136-gpu-trained-deobfuscation-model.md)
+* [ADR 137: npm CLI and MCP design](docs/adr/ADR-137-npm-decompiler-cli-and-mcp.md)
+* [ADR 138: static validation and integrity manifests](docs/adr/ADR-138-static-validation-and-integrity-manifests.md)
+* [Research: decompiler approaches and tradeoffs](docs/research/claude-code-rvsource/20-sota-decompiler-research.md)
+* [Dashboard: explorer and package analysis](dashboard/)
+* [Animated visual system](docs/visuals.md)
 
 <p align="center">
   <em>ruDevolution — because code deserves to be understood.</em>
