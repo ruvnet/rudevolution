@@ -34,6 +34,6 @@
 <text x="845" y="221" fill="#d9e9f6" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="14" font-weight="500">modules/router.js</text>
 <text x="845" y="248" fill="#b19afa" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="13" font-weight="500">infer: handleRequest</text>
 <text x="845" y="275" fill="#65dfca" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="13" font-weight="500">witness: SHA3-256</text>
-<text x="1060" y="337" fill="#e4be8d" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="11" font-weight="650">READABLE ≠ VERIFIED BEHAVIOR</text>
+<text x="850" y="337" fill="#e4be8d" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="11" font-weight="650">READABLE ≠ VERIFIED BEHAVIOR</text>
 <rect x="1" y="1" width="1198" height="358" rx="21" fill="none" stroke="#7996bb" stroke-opacity=".34"/>
 </svg>
