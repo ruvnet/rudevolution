@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="intro-title intro-desc">
+<title id="intro-title">ruDevolution introduction</title><desc id="intro-desc">Three stages: supplied minified code, inferred reference graph, and inspectable module artifacts with confidence and a content hash witness.</desc>
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#06121e"/><stop offset=".48" stop-color="#0b1325"/><stop offset="1" stop-color="#161129"/></linearGradient>
+ <linearGradient id="neon" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#34e8e3"/><stop offset=".55" stop-color="#7bb9ff"/><stop offset="1" stop-color="#b493ff"/></linearGradient>
+ <radialGradient id="aura"><stop stop-color="#51f5e3" stop-opacity=".24"/><stop offset="1" stop-color="#51f5e3" stop-opacity="0"/></radialGradient>
+ <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#7296bb" stroke-opacity=".11" stroke-width="1"/></pattern>
+ <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="7"/></filter>
+</defs><style>
+  .trace{stroke-dasharray:5 13;animation:trace 4s linear infinite}
+  .traceSlow{stroke-dasharray:4 13;animation:trace 7s linear infinite}
+  .glimmer{animation:glimmer 3.4s ease-in-out infinite}
+  .glimmer2{animation:glimmer 4.7s ease-in-out -1.2s infinite}
+  .hover{animation:hover 5s ease-in-out infinite}
+  .scan{animation:scan 5.5s ease-in-out infinite}
+  .rise{animation:rise 4.8s ease-in-out infinite}
+  @keyframes trace{to{stroke-dashoffset:-72}}
+  @keyframes glimmer{0%,100%{opacity:.4}50%{opacity:1}}
+  @keyframes hover{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  @keyframes scan{0%,100%{opacity:.2;transform:translateY(0)}50%{opacity:.8;transform:translateY(35px)}}
+  @keyframes rise{0%,100%{opacity:.42}50%{opacity:1}}
+  @media(prefers-reduced-motion:reduce){.trace,.traceSlow,.glimmer,.glimmer2,.hover,.scan,.rise{animation:none!important}}
+</style>
+<rect width="1200" height="360" rx="22" fill="url(#bg)"/>
+<rect width="1200" height="360" rx="22" fill="url(#grid)" opacity=".7"/>
+<text x="52" y="43" fill="#6ee8da" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="14" font-weight="700">A VISUAL INTRODUCTION</text>
+<text x="52" y="84" fill="#f0f7ff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="26" font-weight="750">Turn an opaque bundle into inspectable artifacts</text>
+<text x="52" y="113" fill="#9db6c8" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="13" font-weight="500">Three views of the same supplied input. Static analysis; never execute the bundle.</text>
+<path d="M78 185H1113" fill="none" stroke="#3b6176" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="trace"/><rect x="52" y="145" width="330" height="166" rx="17" fill="#0b1d30" stroke="#31546b" /><text x="70" y="174" fill="#67e2df" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="13" font-weight="700">01 / COMPRESSED</text><path d="M70 188H362" fill="none" stroke="#344d65" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" /><rect x="438" y="145" width="330" height="166" rx="17" fill="#0b1d30" stroke="#42768b" /><text x="456" y="174" fill="#67e2df" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="13" font-weight="700">02 / GRAPH INFERENCE</text><path d="M456 188H748" fill="none" stroke="#344d65" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" /><rect x="824" y="145" width="330" height="166" rx="17" fill="#0b1d30" stroke="#5b548b" /><text x="842" y="174" fill="#b5a3f9" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="13" font-weight="700">03 / AUDITABLE OUTPUT</text><path d="M842 188H1134" fill="none" stroke="#344d65" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" /><text x="72" y="221" fill="#d6e6ec" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="13" font-weight="500">const n=a=&gt;a.map(x=&gt;x.v)</text>
+<text x="72" y="247" fill="#9bb3c4" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="13" font-weight="500">function z(q){return q[0]}</text>
+<text x="72" y="276" fill="#e5b680" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="12" font-weight="500">// dense identifiers</text>
+<circle cx="502" cy="225" r="5" fill="#69e5db" class="glimmer"/><circle cx="551" cy="210" r="5" fill="#a694ff" class="glimmer2"/><circle cx="601" cy="238" r="5" fill="#69e5db" class="glimmer"/><circle cx="652" cy="213" r="5" fill="#a694ff" class="glimmer2"/><circle cx="708" cy="244" r="5" fill="#69e5db" class="glimmer"/><circle cx="764" cy="221" r="5" fill="#a694ff" class="glimmer2"/><circle cx="603" cy="278" r="5" fill="#69e5db" class="glimmer"/><circle cx="703" cy="279" r="5" fill="#a694ff" class="glimmer2"/>
+<path d="M502 225L551 210" fill="none" stroke="#6586b2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/><path d="M551 210L601 238" fill="none" stroke="#6586b2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/><path d="M601 238L652 213" fill="none" stroke="#6586b2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/><path d="M652 213L708 244" fill="none" stroke="#6586b2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/><path d="M708 244L764 221" fill="none" stroke="#6586b2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/><path d="M601 238L603 278" fill="none" stroke="#6586b2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/><path d="M708 244L703 279" fill="none" stroke="#6586b2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/><path d="M603 278L703 279" fill="none" stroke="#6586b2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>
+<text x="845" y="221" fill="#d9e9f6" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="14" font-weight="500">modules/router.js</text>
+<text x="845" y="248" fill="#b19afa" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="13" font-weight="500">infer: handleRequest</text>
+<text x="845" y="275" fill="#65dfca" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="13" font-weight="500">witness: SHA3-256</text>
+<text x="1060" y="337" fill="#e4be8d" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="11" font-weight="650">READABLE ≠ VERIFIED BEHAVIOR</text>
+<rect x="1" y="1" width="1198" height="358" rx="21" fill="none" stroke="#7996bb" stroke-opacity=".34"/>
+</svg>
