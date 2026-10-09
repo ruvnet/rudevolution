@@ -189,7 +189,7 @@ test('a Room B implementation cannot hide skipped vectors by exiting the test pr
     for (const [name, content] of Object.entries(files)) fs.writeFileSync(path.join(root, name), content);
 
     fs.writeFileSync(path.join(root, 'implementation.mjs'), 'process.exit(0);\n');
-    const earlyExit = spawnSync(process.execPath, ['--test', 'compat.test.mjs'], {
+    const earlyExit = spawnSync(process.execPath, ['--test', '--test-reporter=tap', 'compat.test.mjs'], {
       cwd: root, encoding: 'utf8', timeout: 15000, env: { PATH: process.env.PATH, HOME: process.env.HOME },
     });
     assert.notEqual(earlyExit.status, 0, 'exit(0) must not cause a false passing test suite');
@@ -197,7 +197,7 @@ test('a Room B implementation cannot hide skipped vectors by exiting the test pr
 
     fs.writeFileSync(path.join(root, 'implementation.mjs'),
       "process.stdout.write('TAP version 13\\n# tests 3\\n# pass 3\\n# fail 0\\n# cancelled 0\\n# skipped 0\\n# todo 0\\n'); process.exit(0);");
-    const fakeTAP = spawnSync(process.execPath, ['--test', 'compat.test.mjs'], {
+    const fakeTAP = spawnSync(process.execPath, ['--test', '--test-reporter=tap', 'compat.test.mjs'], {
       cwd: root, encoding: 'utf8', timeout: 15000, env: { PATH: process.env.PATH, HOME: process.env.HOME },
     });
     assert.notEqual(fakeTAP.status, 0, 'forged TAP from untrusted child must not pass');
@@ -217,7 +217,7 @@ test('void return uses an explicit undefined outcome, not null', () => {
     const { artifact, pair } = signSpec(one);
     const files = scaffoldFiles(artifact, pair.publicKey);
     for (const [name, content] of Object.entries(files)) fs.writeFileSync(path.join(root, name), content);
-    const run = () => spawnSync(process.execPath, ['--test', 'compat.test.mjs'], {
+    const run = () => spawnSync(process.execPath, ['--test', '--test-reporter=tap', 'compat.test.mjs'], {
       cwd: root, encoding: 'utf8', timeout: 15000, env: { PATH: process.env.PATH, HOME: process.env.HOME },
     });
     fs.writeFileSync(path.join(root, 'implementation.mjs'), 'export function ping() { return null; }\n');
