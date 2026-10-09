@@ -51,6 +51,12 @@ npm run cleanroom -- validate examples/clean-room/calculator.spec.json
 
 **Important boundary:** The CLI does not provision independent OS identities, prevent covert data encoded inside permitted scalars, attest a human reviewer, establish a license exception, or prove functional equivalence. Independent source access isolation, human evidence review, and legal authorization are required before describing a deployment as clean room.
 
+### End to end clean room pilot
+
+The [two-room end to end pilot](docs/clean-room/E2E.md) adds independently signed reviewer key registries, dual reviewer release, revision and revocation checks, known-marker transfer screening, separate synthetic offline authoring, signed Docker evaluation and hash-chained evidence checkpoints. Run `npm run cleanroom:pilot` for the operator commands and `npm run test:cleanroom` for the synthetic fixtures. The [threat model and invariants](docs/adr/ADR-143-cleanroom-end-to-end-pilot.md) distinguish implemented checks from production requirements.
+
+**Do not use this as evidence of lawful independent authorship.** The CI pilot uses simulated reviewers and containers on one runner. Production needs separate Room A and Room B identities, machines, model contexts, memories, keys and audited transfer authority.
+
 ## Reproducible source checkout
 
 ```bash
