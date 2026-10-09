@@ -42,6 +42,12 @@ test('real Docker Room B denies Room A filesystem, network and writes while test
     const policyFile = path.join(b, 'room-b-policy.json');
     const projectDir = path.join(b, 'implementation');
     const reportFile = path.join(b, 'test-report.json');
+    const signedFile = path.join(b, 'signed-evaluation.json');
+    const workerKeys = generateKeyPairSync('ed25519');
+    const workerPrivateFile = path.join(b, 'worker-signing-private.pem');
+    const workerPublicFile = path.join(b, 'worker-trusted-public.pem');
+    fs.writeFileSync(workerPrivateFile, workerKeys.privateKey.export({ format: 'pem', type: 'pkcs8' }), { mode: 0o600 });
+    fs.writeFileSync(workerPublicFile, workerKeys.publicKey.export({ format: 'pem', type: 'spki' }));
     fs.writeFileSync(approvedFile, JSON.stringify(artifact));
     fs.writeFileSync(publicKeyFile, keys.publicKey.export({ format: 'pem', type: 'spki' }));
     const expiresAt = new Date(Date.now() + 4 * 3600000).toISOString();
@@ -79,16 +85,40 @@ test('real Docker Room B denies Room A filesystem, network and writes while test
       '',
     ].join('\n');
     fs.writeFileSync(path.join(projectDir, 'implementation.mjs'), independent);
-    const result = cli(['sandbox-test', approvedFile, publicKeyFile, policyFile, projectDir, IMAGE, reportFile]);
+    const result = cli(['sandbox-test', approvedFile, publicKeyFile, policyFile, projectDir, IMAGE,
+      reportFile, '--attest', workerPrivateFile, 'worker-ci', signedFile]);
     assert.equal(result.status, 0, 'Docker smoke test failed: ' + result.stdout + result.stderr);
     const report = JSON.parse(fs.readFileSync(reportFile, 'utf8'));
     assert.equal(report.format, REPORT_FORMAT);
     assert.equal(report.status, 'passed');
     assert.equal(report.vectorCount, 3);
+    assert.equal(report.executedVectors, 3);
+    assert.equal(report.passedVectors, 3);
+    assert.match(report.harnessSha256, /^[a-f0-9]{64}$/);
+    assert.match(report.policySha256, /^[a-f0-9]{64}$/);
     assert.equal(report.exitCode, 0);
     assert.equal(report.publicKeyFingerprint, receipt.publicKeyFingerprint);
     assert(!fs.readFileSync(reportFile, 'utf8').includes('NEVER_CROSS_ROOM_BOUNDARY_383'));
     assert(!fs.readdirSync(b).includes('secret-implementation.js'));
+    const checked = cli(['verify-attestation', signedFile, workerPublicFile, 'worker-ci', report.approvalSha256]);
+    assert.equal(checked.status, 0, checked.stdout + checked.stderr);
+    const altered = JSON.parse(fs.readFileSync(signedFile, 'utf8'));
+    altered.report.passedVectors = 0;
+    const forged = path.join(b, 'forged-evaluation.json');
+    fs.writeFileSync(forged, JSON.stringify(altered));
+    const rejected = cli(['verify-attestation', forged, workerPublicFile, 'worker-ci', report.approvalSha256]);
+    assert.notEqual(rejected.status, 0, 'edited evaluation must not verify');
+
+    // Adversarial implementation exits successfully without calling any public
+    // operation. The evaluator must not mistake its exit code for vector success.
+    fs.writeFileSync(path.join(projectDir, 'implementation.mjs'), 'process.exit(0);\n');
+    const bypassFile = path.join(b, 'bypass-report.json');
+    const bypass = cli(['sandbox-test', approvedFile, publicKeyFile, policyFile, projectDir, IMAGE, bypassFile]);
+    assert.notEqual(bypass.status, 0, 'exit(0) cannot bypass contract evaluation');
+    const rejectedBypass = JSON.parse(fs.readFileSync(bypassFile, 'utf8'));
+    assert.equal(rejectedBypass.status, 'failed');
+    assert.equal(rejectedBypass.passedVectors, 0);
+    fs.writeFileSync(path.join(projectDir, 'implementation.mjs'), independent);
 
     // Invalid/unsigned edits must be rejected before creating a report or
     // calling Docker. Each run uses a fresh report file.
