@@ -18,7 +18,6 @@ jobs:
           node-version: ${{ matrix.node }}
       - run: python3 scripts/check_visuals.py
       - run: npm test
-      - run: npm run test:cleanroom
       - run: npm run bench
       - run: npm ci --ignore-scripts
         working-directory: dashboard
@@ -34,3 +33,20 @@ jobs:
       - run: cargo +stable test --locked
       - run: cargo +stable check --locked --features neural
       - run: cargo +stable bench --locked --no-run
+
+  cleanroom_docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+      - name: Pull Node runtime and pin immutable digest
+        run: |
+          docker pull node:22-alpine
+          IMAGE="$(docker image inspect node:22-alpine --format '{{index .RepoDigests 0}}')"
+          test -n "$IMAGE"
+          echo "RUDEVOLUTION_TEST_IMAGE=$IMAGE" >> "$GITHUB_ENV"
+      - name: Run real isolated Room B regression
+        run: node --test npm/test/clean-room-docker.test.js
