@@ -83,7 +83,8 @@ function verifyAttestation(envelope, trustedPublicKey, {
   const sig=Buffer.from(a.signature, 'base64');
   if (sig.length !== 64 || sig.toString('base64') !== a.signature) reject('noncanonical signature');
   const key=trustedPublicKey instanceof KeyObject ? trustedPublicKey : createPublicKey(trustedPublicKey);
-  if (key.type !== 'public' || key.asymmetricKeyType !== 'ed25519' || fp(key) !== a.publicKeyFingerprint) reject('untrusted signing key');
+  if (key.type !== 'public' || key.asymmetricKeyType !== 'ed25519') reject('Ed25519 public key required');
+  if (fp(key) !== a.publicKeyFingerprint) reject('untrusted signing key');
   if (!verify(null, Buffer.from(message(report,a.workerId,a.signedAt,a.reportSha256)), key, sig)) reject('bad signature');
   if (workerId !== undefined && workerId !== a.workerId) reject('untrusted worker identity');
   if (approvalSha256 !== undefined && approvalSha256 !== report.approvalSha256) reject('unexpected approval');
