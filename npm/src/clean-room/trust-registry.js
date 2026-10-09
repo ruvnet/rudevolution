@@ -39,7 +39,10 @@ function publicKey(value) {
   return key;
 }
 function fingerprint(value) {
-  const key = value instanceof KeyObject ? value : publicKey(value);
+  const key = value instanceof KeyObject
+    ? (value.type === 'private' ? createPublicKey(value) : value)
+    : publicKey(value);
+  if (key.type !== 'public' || key.asymmetricKeyType !== 'ed25519') reject('Ed25519 key required for fingerprint');
   return sha256(key.export({ type: 'spki', format: 'der' }));
 }
 function validateDocument(doc) {
