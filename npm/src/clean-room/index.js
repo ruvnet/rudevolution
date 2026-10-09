@@ -156,7 +156,49 @@ function scaffoldFiles(artifact, publicKey) {
   }).join('\n\n');
   const contractText = `${canonicalStringify(spec)}\n`;
   const contractDigest = sha256(contractText);
-  const runner = `import test from 'node:test';\nimport assert from 'node:assert/strict';\nimport { createHash } from 'node:crypto';\nimport { readFileSync } from 'node:fs';\nconst contractBytes = readFileSync(new URL('./contract.json', import.meta.url));\nconst observedDigest = createHash('sha256').update(contractBytes).digest('hex');\nif (observedDigest !== '${contractDigest}') throw new Error('Approved contract integrity mismatch');\nconst spec = JSON.parse(contractBytes.toString('utf8'));\nconst implementation = await import('./implementation.mjs');\nfor (const [index, vector] of spec.vectors.entries()) {\n  test(\`compatibility vector \${index}: \${vector.operation}\`, () => {\n    const actual = implementation[vector.operation](...vector.arguments);\n    assert.deepStrictEqual(actual, vector.expected === null && spec.operations.find(op => op.name === vector.operation).returns === 'void' ? undefined : vector.expected);\n  });\n}\n`;
+  // Never import implementer-controlled code into the trusted test process.
+  // Node's test runner can misleadingly exit 0 if a module calls process.exit(0)
+  // during import. One disposable subprocess is used for every approved vector.
+  const worker = [
+    "import { readFileSync } from 'node:fs';",
+    "const call = JSON.parse(readFileSync(0, 'utf8'));",
+    "const implementation = await import('./implementation.mjs');",
+    "const fn = implementation[call.operation];",
+    "if (typeof fn !== 'function') throw new Error('missing operation export');",
+    "const result = await fn(...call.arguments);",
+    "process.stdout.write(JSON.stringify(result === undefined ? { kind: 'void' } : { kind: 'value', value: result }));",
+  ].join('\n');
+  const runner = [
+    "import test from 'node:test';",
+    "import assert from 'node:assert/strict';",
+    "import { spawnSync } from 'node:child_process';",
+    "import { createHash } from 'node:crypto';",
+    "import { readFileSync } from 'node:fs';",
+    "const contractBytes = readFileSync(new URL('./contract.json', import.meta.url));",
+    "const observedDigest = createHash('sha256').update(contractBytes).digest('hex');",
+    "if (observedDigest !== " + JSON.stringify(contractDigest) + ") throw new Error('Approved contract integrity mismatch');",
+    "const spec = JSON.parse(contractBytes.toString('utf8'));",
+    "const WORKER = " + JSON.stringify(worker) + ";",
+    "for (const [index, vector] of spec.vectors.entries()) {",
+    "  test('compatibility vector ' + index + ': ' + vector.operation, () => {",
+    "    const child = spawnSync(process.execPath, ['--input-type=module', '--eval', WORKER], {",
+    "      cwd: new URL('.', import.meta.url),",
+    "      input: JSON.stringify({ operation: vector.operation, arguments: vector.arguments }),",
+    "      encoding: 'utf8', timeout: 2000, maxBuffer: 4096,",
+    "      env: { HOME: '/tmp', TMPDIR: '/tmp' },",
+    "    });",
+    "    assert.equal(child.error, undefined, child.error?.message);",
+    "    assert.equal(child.signal, null, 'worker terminated by signal');",
+    "    assert.equal(child.status, 0, 'worker exited without returning a result: ' + (child.stderr || ''));",
+    "    const observed = JSON.parse(child.stdout);",
+    "    const operation = spec.operations.find(op => op.name === vector.operation);",
+    "    const expected = operation.returns === 'void'",
+    "      ? { kind: 'void' } : { kind: 'value', value: vector.expected };",
+    "    assert.deepStrictEqual(observed, expected);",
+    "  });",
+    "}",
+    "",
+  ].join('\n');
   return {
     'contract.json': contractText,
     'implementation.mjs': `${fnDocs}\n`,
