@@ -75,7 +75,7 @@ test('policy gates signer, reviewer, target, approval age and trust expiration',
     change('maxApprovalAgeHours', 721),
     change('format', 'unknown'),
     { ...policy, source: 'hidden implementation' },
-  ]) assert.throws(() => checkPolicy(candidate, verified, NOW), /rejected/);
+  ]) assert.throws(() => checkPolicy(candidate, verified, NOW, IMAGE), /rejected/);
   assert.throws(() => checkPolicy(policy, verified, new Date('2026-10-08T19:00:00.000Z')), /future/);
 }));
 
