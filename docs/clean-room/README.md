@@ -1,5 +1,7 @@
 # ruDevolution Clean Room: reviewed interface handoff
 
+**New:** [End to end dual reviewer pilot and registry/ledger operator guide](E2E.md). This extends the developer preview without replacing its explicit review and independent host requirements.
+
 This is a **bounded developer preview** of an audited specification handoff. The workflow supports authorized behavioral analysis and independent implementation. It is *not* an automatic software cloning engine or a legal assurance of clean room independence.
 
 > **Critical separation:** Room A may contain third-party original code and reviewer signing keys. Room B must never mount Room A data, repositories, private keys, execution logs, model context, retrieval indexes, or secrets. The new optional Docker runner restricts **evaluation of independently written Room B code**. It does **not** isolate the upstream coding agent, provision Room B hosts, or certify legal independence.
@@ -180,6 +182,7 @@ The regression and Docker fixtures place a synthetic proprietary marker in a Roo
 * [ADR 139: Isolation and specification firewall](../adr/ADR-139-clean-room-isolation-and-specification-firewall.md)
 * [ADR 140: Signed approvals and compatibility evidence](../adr/ADR-140-clean-room-attestation-and-compatibility-evidence.md)
 * [ADR 141: Isolated Room B evaluation and pinned trust](../adr/ADR-141-room-b-isolated-evaluation.md)
+* [ADR 143: Two room end to end pilot](../adr/ADR-143-cleanroom-end-to-end-pilot.md)
 * [Prior security review](../reviews/2026-09-security-performance.md)
 
 Before using third-party software, document authorization and obtain legal review. This command's sandbox does not guarantee the authoring agent is uncontaminated. Before claiming a **production** clean room deployment, validate OS isolation, access controls, audit retention, no shared model context, key custody, a red-team test for covert vector transfer, and independent reviewer procedures. For software compatibility, separate observable behavior from implementation details and report fixture coverage honestly.

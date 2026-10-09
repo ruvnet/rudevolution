@@ -8,7 +8,8 @@
   "scripts": {
     "test": "node npm/test/decompiler-reconstruction.js && node --test npm/test/security.test.js && npm run test:cleanroom",
     "bench": "node npm/bench/rename.js",
-    "test:cleanroom": "node --test npm/test/clean-room.test.js npm/test/clean-room-isolation.test.js npm/test/clean-room-attestation.test.js npm/test/clean-room-docker.test.js",
-    "cleanroom": "node npm/src/clean-room/cli.js"
+    "test:cleanroom": "node --test npm/test/clean-room.test.js npm/test/clean-room-isolation.test.js npm/test/clean-room-attestation.test.js npm/test/clean-room-pilot.test.js npm/test/clean-room-pilot-cli.test.js npm/test/clean-room-docker.test.js npm/test/clean-room-e2e-docker.test.js",
+    "cleanroom": "node npm/src/clean-room/cli.js",
+    "cleanroom:pilot": "node npm/src/clean-room/pilot-cli.js"
   }
 }

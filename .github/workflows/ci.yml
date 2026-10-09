@@ -50,3 +50,5 @@ jobs:
           echo "RUDEVOLUTION_TEST_IMAGE=$IMAGE" >> "$GITHUB_ENV"
       - name: Run real isolated Room B regression
         run: node --test npm/test/clean-room-docker.test.js
+      - name: Execute two-room signed handoff and authoring pilot
+        run: node --test npm/test/clean-room-e2e-docker.test.js
