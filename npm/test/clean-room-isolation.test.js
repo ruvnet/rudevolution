@@ -7,7 +7,7 @@ const path = require('node:path');
 const { generateKeyPairSync } = require('node:crypto');
 const { approveSpec, scaffoldFiles } = require('../src/clean-room');
 const {
-  POLICY_FORMAT, checkPolicy, readRegular, prepareRoomB, dockerArgs, sandboxTest,
+  POLICY_FORMAT, checkPolicy, readRegular, prepareRoomB, dockerArgs, parseTapSummary, sandboxTest,
 } = require('../src/clean-room/isolated-runner');
 const fixture = require('../../examples/clean-room/calculator.spec.json');
 
@@ -127,7 +127,8 @@ test('Docker args allow only one read-only stage mount and deny network, privile
   const mounts = args.filter(item => item.startsWith('--mount='));
   assert.equal(mounts.length, 1);
   assert.match(mounts[0], /^--mount=type=bind,source=\/tmp\/rudevolution-room-b-example,target=\/work,readonly$/);
-  assert.equal(args.at(-3), IMAGE);
+  assert.equal(args.at(-4), IMAGE);
+  assert(args.includes('--test-reporter=tap'));
   assert.throws(() => dockerArgs('/tmp/with,malicious', IMAGE, 'rudevolution-b-' + 'a'.repeat(24)), /rejected/);
   assert.throws(() => dockerArgs('/tmp/safe', 'node:22-alpine', 'rudevolution-b-' + 'a'.repeat(24)), /immutable sha256/);
   assert.throws(() => dockerArgs('/tmp/safe', IMAGE, 'contaminated'), /rejected/);
@@ -149,7 +150,7 @@ test('isolated runner mounts only a verified minimal staging copy and produces h
         const text = fs.readFileSync(path.join(tempDir, name), 'utf8');
         assert.doesNotMatch(text, new RegExp(env.marker));
       }
-      return { status: 0, stdout: '# pass 3\n', stderr: '', signal: null };
+      return { status: 0, stdout: 'TAP version 13\n1..3\n# tests 3\n# suites 0\n# pass 3\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n', stderr: '', signal: null };
     }
     return { status: 1, stderr: 'No such container', stdout: '' };
   };
@@ -203,4 +204,32 @@ test('no symlinked policy and no hardlinked implementation', () => scoped(env =>
   const sibling = path.join(env.roomB, 'hardlink.mjs');
   fs.linkSync(file, sibling);
   assert.throws(() => readRegular(file, 1024 * 1024), /uniquely linked/);
+}));
+
+test('TAP parser refuses zero tests, incomplete counters, skipped tests and forged counts', () => {
+  const valid = 'TAP version 13\n# tests 3\n# pass 3\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n';
+  assert.deepEqual(parseTapSummary(valid, 3), { executedVectors: 3, passedVectors: 3 });
+  const invalid = [
+    '',
+    '# tests 3\n# pass 3\n',
+    'TAP version 13\n# tests 0\n# pass 0\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n',
+    valid.replace('# pass 3', '# pass 2'),
+    valid.replace('# skipped 0', '# skipped 1'),
+    valid.replace('# fail 0', '# fail 1'),
+    valid.replace('# todo 0', '# todo 1'),
+    valid.replace('# cancelled 0', '# cancelled 1'),
+    valid + '# tests 3\n',
+  ];
+  for (const str of invalid) assert.equal(parseTapSummary(str, 3), null);
+});
+
+test('even Docker exit 0 is not sufficient without verified vector accounting', () => scoped(env => {
+  const fake = (program, args) => args.includes('run')
+    ? { status: 0, signal: null, stderr: '', stdout: 'TAP version 13\n# tests 0\n# pass 0\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n' }
+    : { status: 1, stderr: 'No such container', stdout: '' };
+  const report = sandboxTest(env.options, fake);
+  assert.equal(report.status, 'failed');
+  assert.equal(report.vectorCount, 3);
+  assert.equal(report.executedVectors, 0);
+  assert.equal(report.passedVectors, 0);
 }));

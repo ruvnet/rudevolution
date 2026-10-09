@@ -13,10 +13,10 @@ const os = require('node:os');
 const path = require('node:path');
 const { randomBytes } = require('node:crypto');
 const { spawnSync } = require('node:child_process');
-const { verifyApproved, scaffoldFiles, sha256 } = require('./index');
+const { verifyApproved, scaffoldFiles, canonicalStringify, sha256 } = require('./index');
 
 const POLICY_FORMAT = 'rudevolution.cleanroom.policy/v1';
-const REPORT_FORMAT = 'rudevolution.cleanroom.sandbox-report/v1';
+const REPORT_FORMAT = 'rudevolution.cleanroom.sandbox-report/v2';
 const IMAGE = /^[a-z0-9][a-z0-9./_-]{0,127}@sha256:[a-f0-9]{64}$/;
 const HEX = /^[a-f0-9]{64}$/;
 const REVIEWER = /^[A-Za-z0-9][A-Za-z0-9_.@-]{1,79}$/;
@@ -115,6 +115,8 @@ function prepareRoomB({ approvedFile, publicKeyFile, policyFile, projectDir, ima
   // or a project directory containing arbitrary files.
   return {
     verified,
+    policySha256: sha256(canonicalStringify(policy)),
+    harnessSha256: sha256(reference['compat.test.mjs']),
     vectorCount: verified.spec.vectors.length,
     files: {
       'contract.json': reference['contract.json'],
@@ -140,9 +142,34 @@ function dockerArgs(stageDir, image, containerName) {
     '--tmpfs=/tmp:rw,noexec,nosuid,nodev,size=16m,mode=1777',
     '--mount=type=bind,source=' + stageDir + ',target=/work,readonly',
     '--workdir=/work', '--env=HOME=/tmp', '--env=TMPDIR=/tmp',
-    '--entrypoint=node', image, '--test', 'compat.test.mjs',
+    '--entrypoint=node', image, '--test', '--test-reporter=tap', 'compat.test.mjs',
   ];
 }
+/**
+ * The Docker exit status alone is not sufficient to establish that approved
+ * vectors actually ran. Require an unambiguous Node TAP footer with exactly
+ * one passing result per approved vector, no skips or cancellations.
+ */
+function parseTapSummary(output, expectedVectors) {
+  if (typeof output !== 'string' || !Number.isInteger(expectedVectors) || expectedVectors < 1) return null;
+  if (!/^TAP version 13(?:\r?\n)/.test(output)) return null;
+  const counters = {};
+  const matches = output.matchAll(/^# (tests|pass|fail|cancelled|skipped|todo) (\d+)\r?$/gm);
+  for (const match of matches) {
+    const field = match[1];
+    if (Object.prototype.hasOwnProperty.call(counters, field)) return null;
+    counters[field] = Number(match[2]);
+    if (!Number.isSafeInteger(counters[field])) return null;
+  }
+  for (const name of ['tests', 'pass', 'fail', 'cancelled', 'skipped', 'todo']) {
+    if (!Object.prototype.hasOwnProperty.call(counters, name)) return null;
+  }
+  if (counters.tests !== expectedVectors || counters.pass !== expectedVectors ||
+      counters.fail !== 0 || counters.cancelled !== 0 ||
+      counters.skipped !== 0 || counters.todo !== 0) return null;
+  return { executedVectors: counters.tests, passedVectors: counters.pass };
+}
+
 function sandboxTest(options, spawn = spawnSync) {
   if (process.platform !== 'linux') deny('isolated runner requires Linux');
   const { approvedFile, publicKeyFile, policyFile, projectDir, image, now = new Date() } = options;
@@ -165,14 +192,19 @@ function sandboxTest(options, spawn = spawnSync) {
     started = true;
     const timedOut = result.error && result.error.code === 'ETIMEDOUT';
     const errored = result.error && !timedOut;
-    const passed = result.status === 0 && !result.signal && !result.error;
+    const summary = parseTapSummary(result.stdout, prepared.vectorCount);
+    const passed = result.status === 0 && !result.signal && !result.error && summary !== null;
     const report = {
       format: REPORT_FORMAT,
       approvalSha256: prepared.verified.approvalSha256,
-      specSha256: sha256(require('./index').canonicalStringify(prepared.verified.spec)),
+      specSha256: sha256(canonicalStringify(prepared.verified.spec)),
+      policySha256: prepared.policySha256,
+      harnessSha256: prepared.harnessSha256,
       publicKeyFingerprint: prepared.verified.publicKeyFingerprint,
       implementationSha256: sha256(prepared.files['implementation.mjs']),
       image, vectorCount: prepared.vectorCount,
+      executedVectors: summary?.executedVectors ?? 0,
+      passedVectors: summary?.passedVectors ?? 0,
       status: passed ? 'passed' : timedOut ? 'timeout' : errored ? 'runner_error' : 'failed',
       exitCode: Number.isInteger(result.status) ? result.status : null,
       durationMs: Math.max(0, Date.now() - start),
@@ -198,5 +230,5 @@ function sandboxTest(options, spawn = spawnSync) {
 
 module.exports = {
   POLICY_FORMAT, REPORT_FORMAT, checkPolicy, readRegular, prepareRoomB,
-  dockerArgs, sandboxTest,
+  dockerArgs, parseTapSummary, sandboxTest,
 };

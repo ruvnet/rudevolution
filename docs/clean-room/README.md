@@ -71,13 +71,13 @@ Do not enable LLM agent tools that can read Room A knowledge, a shared RuVector 
 
 ## Optional Room B isolated evaluation
 
-The new \`sandbox-test\` command enforces a narrow **evaluation-time** security boundary on Linux with a local Docker daemon. It does not run source from Room A, reconstruct third-party code, or create a clean room development machine. The independent implementation is still authored outside the test container and must come from a separately controlled Room B workspace.
+The new `sandbox-test` command enforces a narrow **evaluation-time** security boundary on Linux with a local Docker daemon. It does not run source from Room A, reconstruct third-party code, or create a clean room development machine. The independent implementation is still authored outside the test container and must come from a separately controlled Room B workspace.
 
-**Prerequisites:** Linux, Docker with local \`/var/run/docker.sock\`, Node.js 22+, a private Room B worker host with no Room A data or credentials, and an **independently trusted** signing key. Access to the Docker daemon is privileged: use an isolated, operator-managed worker, not a general-purpose desktop shared with source analysts.
+**Prerequisites:** Linux, Docker with local `/var/run/docker.sock`, Node.js 22+, a private Room B worker host with no Room A data or credentials, and an **independently trusted** signing key. Access to the Docker daemon is privileged: use an isolated, operator-managed worker, not a general-purpose desktop shared with source analysts.
 
 A Room B policy stored **outside** the signed handoff must pin all of the following:
 
-\`\`\`json
+```json
 {
   "format": "rudevolution.cleanroom.policy/v1",
   "target": "calculator-compatibility",
@@ -87,22 +87,22 @@ A Room B policy stored **outside** the signed handoff must pin all of the follow
   "expiresAt": "<future ISO UTC timestamp, for example 2026-12-31T00:00:00.000Z>",
   "maxApprovalAgeHours": 168
 }
-\`\`\`
+```
 
-The placeholders above are intentionally **not usable** until the Room B operator supplies a real trusted key fingerprint, runtime digest and expiration. Never discover your trust anchor by trusting an unverified \`approved.json\` bundle. Pin the reviewer and image digest through your organization's independent approval process.
+The placeholders above are intentionally **not usable** until the Room B operator supplies a real trusted key fingerprint, runtime digest and expiration. Never discover your trust anchor by trusting an unverified `approved.json` bundle. Pin the reviewer and image digest through your organization's independent approval process.
 
 Retrieve the approved container image on the isolated worker **before** evaluation. A development smoke test can discover the digest of a fetched Node image:
 
-\`\`\`bash
+```bash
 docker pull node:22-alpine
 docker image inspect node:22-alpine --format '{{index .RepoDigests 0}}'
-\`\`\`
+```
 
-For production, use a separately reviewed, patched image and independently pin its immutable digest in the Room B policy. The runner **refuses mutable image tags** and uses \`--pull=never\` to avoid fetching images while evaluating.
+For production, use a separately reviewed, patched image and independently pin its immutable digest in the Room B policy. The runner **refuses mutable image tags** and uses `--pull=never` to avoid fetching images while evaluating.
 
-Run from the repository root, with the report destination **outside** the \`fresh-implementation\` scaffold:
+Run from the repository root, with the report destination **outside** the `fresh-implementation` scaffold:
 
-\`\`\`bash
+```bash
 node npm/src/clean-room/cli.js sandbox-test \
   approved.json \
   room-b-trusted-public.pem \
@@ -110,24 +110,61 @@ node npm/src/clean-room/cli.js sandbox-test \
   fresh-implementation \
   node@sha256:<approved-full-digest> \
   independent-evaluation-report.json
-\`\`\`
+```
 
-The command rechecks the signature, reviewer, target, age, policy expiration, key fingerprint and image digest **before** loading an implementation. It then requires the scaffold to contain exactly \`APPROVAL.txt\`, \`contract.json\`, \`compat.test.mjs\` and \`implementation.mjs\`. Only the last file may be edited. Unknown files, source maps, changed tests, symlinks, hardlinks and modified contracts are rejected.
+The command rechecks the signature, reviewer, target, age, policy expiration, key fingerprint and image digest **before** loading an implementation. It then requires the scaffold to contain exactly `APPROVAL.txt`, `contract.json`, `compat.test.mjs` and `implementation.mjs`. Only the last file may be edited. Unknown files, source maps, changed tests, symlinks, hardlinks and modified contracts are rejected.
 
-The implementation runs in Docker with no container network, no elevated Linux capabilities, a read-only filesystem, an ephemeral \`/tmp\`, unprivileged UID 65534, CPU/memory/PID limits, and a single read-only mount containing **only three required files**. Neither Room A nor the original Room B project directory is mounted. The runner records a JSON report with review, specification, implementation and image hashes, test outcome, duration and hashed logs, without embedding raw execution logs.
+The implementation runs in Docker with no container network, no elevated Linux capabilities, a read-only filesystem, an ephemeral `/tmp`, unprivileged UID 65534, CPU/memory/PID limits, and a single read-only mount containing **only three required files**. Neither Room A nor the original Room B project directory is mounted. The runner records a versioned JSON report with review, specification, policy, generated harness, implementation and image digests, verified vector counts, duration and hashed logs, without embedding raw execution logs.
 
 If Docker is unavailable or the image is not locally present, the command fails rather than executing the implementation on the host. This is a defense-in-depth sandbox, not a mathematical noninterference proof or a substitute for independent implementation workflows.
 
 For an end-to-end Linux smoke test using Docker, run:
 
-\`\`\`bash
+```bash
 RUDEVOLUTION_TEST_IMAGE='node@sha256:<locally-loaded-full-digest>' \
   node --test npm/test/clean-room-docker.test.js
-\`\`\`
+```
 
 The CI workflow derives a real digest and runs this integration test. Without that environment variable, the Docker test is skipped; policy, staging, malicious-file and cleanup tests still run locally.
 
 See [ADR 141](../adr/ADR-141-room-b-isolated-evaluation.md) for the threat model and explicit runtime controls. The Docker flags correspond to documented options in [Docker run](https://docs.docker.com/reference/cli/docker/container/run), [bind mounts](https://docs.docker.com/engine/storage/bind-mounts/), and [tmpfs](https://docs.docker.com/engine/storage/tmpfs/).
+
+## Verified-vector harness and signed Room B evidence
+
+**Security fix:** Earlier scaffolds imported independent implementation code directly into the Node test runner before tests registered. An implementation containing only `process.exit(0)` could therefore cause a successful process exit without running any approved vectors. The hardened scaffold launches **one short-lived subprocess per approved vector**. Each child receives a single primitive call and must return one well-formed JSON result; the trusted parent checks the result. The Docker evaluator separately requires a complete TAP summary matching every vector, with no skips, failures or cancellations. Its report uses `rudevolution.cleanroom.sandbox-report/v2` and records `executedVectors`, `passedVectors`, and digests of both the approved policy and generated harness.
+
+**Migration:** Existing Room B scaffolds do not have the hardened test runner and are intentionally rejected by the isolated evaluator. Create a fresh directory with `scaffold` using the same approved artifact and the independently pinned public key. Independently review and copy only your **Room B authored** implementation into the fresh scaffold. Do not copy old test scripts or third-party reference material.
+
+An evaluator report may optionally be **signed by a separate Room B worker key** on the host after container termination. The worker key must be provisioned and protected independently from the Room A review key and must never be mounted in the test container. Generate a dedicated key in the isolated Room B signing environment:
+
+```bash
+umask 077
+openssl genpkey -algorithm Ed25519 -out room-b-worker-private.pem
+openssl pkey -in room-b-worker-private.pem -pubout -out trusted-worker-public.pem
+```
+
+Add the attestation arguments after the usual six evaluation inputs:
+
+```bash
+node npm/src/clean-room/cli.js sandbox-test \
+  approved.json room-b-trusted-public.pem room-b-policy.json \
+  fresh-implementation 'node@sha256:<approved-full-digest>' \
+  evaluation-report.json \
+  --attest room-b-worker-private.pem worker-one signed-evaluation.json
+```
+
+This writes an ordinary v2 evaluation report and a separately signed `rudevolution.cleanroom.evaluation-attestation/v1` envelope. Verify it with a public key obtained **out of band**, the expected worker identifier and the SHA256 of the independently approved artifact:
+
+```bash
+node npm/src/clean-room/cli.js verify-attestation \
+  signed-evaluation.json trusted-worker-public.pem worker-one \
+  <expected-approval-sha256>
+```
+
+Signatures bind the report bytes, approved artifact digest, image digest, implementation hash, policy digest, harness digest and recorded vector counts. They **do not attest** that the host ran unmodified software, that the implementation was independently authored, or that the replacement is legally permissible. The current signer does not use a hardware-backed or remote attestation service. Use a separate trusted Room B signing host and an external key lifecycle/revocation policy for higher assurance.
+
+The v2 harness tests approved primitive call results independently. It cannot establish untested behavior, stateful equivalence, secret-independent development or immunity to malicious implementations that deliberately return memorized public test vectors.
+
 
 ## Reproducible smoke test
 

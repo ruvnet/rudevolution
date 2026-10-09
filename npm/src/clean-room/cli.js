@@ -6,6 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { validateSpec, approveSpec, verifyApproved, scaffoldFiles } = require('./index');
 const { sandboxTest } = require('./isolated-runner');
+const { attestReport, verifyAttestation } = require('./attestation');
 
 function assertNoSymlinkAncestors(filename) {
   let current = path.resolve(path.dirname(filename));
@@ -95,24 +96,59 @@ function main(argv) {
       return;
     }
     case 'sandbox-test': {
-      requireArgs(args, 6, 'node npm/src/clean-room/cli.js sandbox-test approved.json trusted-public.pem room-b-policy.json independent-project IMAGE@sha256:DIGEST report.json');
-      const [approvedFile, publicKeyFile, policyFile, projectDir, image, reportFile] = args;
-      const project = path.resolve(projectDir);
-      const output = path.resolve(reportFile);
-      const relative = path.relative(project, output);
-      if (relative === '' || (relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative))) {
-        throw Error('Room B test report must be stored outside the implementation project');
+      if (args.length !== 6 && args.length !== 10) {
+        throw Error('Usage: sandbox-test approved.json trusted-public.pem room-b-policy.json independent-project image@sha256:DIGEST report.json [--attest worker-private.pem worker-id attestation.json]');
       }
+      const [approvedFile, publicKeyFile, policyFile, projectDir, image, reportFile, flag, workerKeyFile, workerId, attestationFile] = args;
+      const project = path.resolve(projectDir);
+      const outsideProject = filename => {
+        const output = path.resolve(filename);
+        const relative = path.relative(project, output);
+        if (relative === '' || (relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative))) {
+          throw Error('Evaluation outputs must be outside the implementation project');
+        }
+      };
+      outsideProject(reportFile);
       verifyOutputParent(reportFile);
       if (fs.existsSync(reportFile)) throw Error('Refusing to overwrite a previous evaluation report');
+      if (args.length === 10) {
+        if (flag !== '--attest') throw Error('Explicit --attest flag required');
+        outsideProject(attestationFile);
+        verifyOutputParent(attestationFile);
+        if (path.resolve(attestationFile) === path.resolve(reportFile) || fs.existsSync(attestationFile)) {
+          throw Error('Attestation must be a new, separate file');
+        }
+      }
       const report = sandboxTest({ approvedFile, publicKeyFile, policyFile, projectDir, image });
-      safeOutput(reportFile, JSON.stringify(report, null, 2) + '\n');
-      process.stdout.write('Room B isolated test: ' + report.status + ', approved vectors=' + report.vectorCount + '\n');
+      // Sign only results returned by this verified runner, not arbitrary user JSON.
+      // Private key is loaded on the Room B host after container termination.
+      const signed = args.length === 10
+        ? attestReport(report, { privateKey: readPrivateKey(workerKeyFile), workerId })
+        : null;
+      let createdReport = false;
+      try {
+        safeOutput(reportFile, JSON.stringify(report, null, 2) + '\n');
+        createdReport = true;
+        if (signed) safeOutput(attestationFile, JSON.stringify(signed, null, 2) + '\n');
+      } catch (error) {
+        if (signed && createdReport) fs.unlinkSync(reportFile);
+        throw error;
+      }
+      process.stdout.write('Room B isolated test: ' + report.status + ', executed=' + report.executedVectors + '/' + report.vectorCount + '\n');
       if (report.status !== 'passed') process.exitCode = 1;
       return;
     }
+    case 'verify-attestation': {
+      requireArgs(args, 4, 'verify-attestation attestation.json trusted-worker-public.pem worker-id expected-approval-sha256');
+      const [attestationFile, workerPublicKeyFile, workerId, approvalSha256] = args;
+      const envelope = readJson(attestationFile, 32 * 1024);
+      const key = readBounded(workerPublicKeyFile, 8192);
+      const verified = verifyAttestation(envelope, key, { workerId, approvalSha256 });
+      process.stdout.write('Verified worker evidence: ' + verified.report.status + ', report=' + verified.reportSha256 + '\n');
+      return;
+    }
     default:
-      throw Error('Usage: cli.js <validate|approve|verify|scaffold|sandbox-test> ...');
+      throw Error('Usage: cli.js <validate|approve|verify|scaffold|sandbox-test|verify-attestation> ...');
   }
 }
 

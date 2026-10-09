@@ -47,7 +47,7 @@ npm run cleanroom -- validate examples/clean-room/calculator.spec.json
 # See docs/clean-room/README.md for the separate-room approval and scaffold commands.
 ```
 
-**Optional offline Room B execution:** `sandbox-test` revalidates a separately pinned reviewer, public key and immutable Docker image, stages only three allowlisted files, and runs independent compatibility tests in a constrained local Docker container. This constrains evaluation, not the authoring agent or upstream source access. See the [isolated runner guide](docs/clean-room/README.md#optional-room-b-isolated-evaluation).
+**Optional offline Room B execution:** `sandbox-test` revalidates the signed contract and independently pinned policy, stages only three allowlisted files, and runs each approved vector in a separate subprocess inside a restricted local Docker container. It requires complete vector accounting, and can produce a separately signed worker evidence report. This constrains evaluation, not the authoring agent or upstream source access. See the [isolated runner guide](docs/clean-room/README.md#optional-room-b-isolated-evaluation) and [ADR 142](docs/adr/ADR-142-vector-evidence-attestation.md).
 
 **Important boundary:** The CLI does not provision independent OS identities, prevent covert data encoded inside permitted scalars, attest a human reviewer, establish a license exception, or prove functional equivalence. Independent source access isolation, human evidence review, and legal authorization are required before describing a deployment as clean room.
 
