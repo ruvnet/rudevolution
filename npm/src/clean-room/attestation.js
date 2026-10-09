@@ -62,6 +62,7 @@ function attestReport(report, {privateKey, workerId, now=new Date()}) {
   if (!(now instanceof Date) || !Number.isFinite(now.getTime())) reject('invalid clock');
   const key = privateKey instanceof KeyObject ? privateKey : createPrivateKey(privateKey);
   if (key.type !== 'private' || key.asymmetricKeyType !== 'ed25519') reject('Ed25519 private key required');
+  if (fp(key) === report.publicKeyFingerprint) reject('worker key must differ from Room A reviewer key');
   const signedAt = now.toISOString(), reportSha256 = sha256(canonicalStringify(report));
   const signature = sign(null, Buffer.from(message(report, workerId, signedAt, reportSha256)), key).toString('base64');
   return { format:FORMAT, report, attester:{
