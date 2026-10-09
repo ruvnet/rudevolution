@@ -5,6 +5,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { validateSpec, approveSpec, verifyApproved, scaffoldFiles } = require('./index');
+const { sandboxTest } = require('./isolated-runner');
 
 function assertNoSymlinkAncestors(filename) {
   let current = path.resolve(path.dirname(filename));
@@ -93,8 +94,25 @@ function main(argv) {
       process.stdout.write(`Created isolated implementation scaffold with ${signed.spec.operations.length} operations\n`);
       return;
     }
+    case 'sandbox-test': {
+      requireArgs(args, 6, 'node npm/src/clean-room/cli.js sandbox-test approved.json trusted-public.pem room-b-policy.json independent-project IMAGE@sha256:DIGEST report.json');
+      const [approvedFile, publicKeyFile, policyFile, projectDir, image, reportFile] = args;
+      const project = path.resolve(projectDir);
+      const output = path.resolve(reportFile);
+      const relative = path.relative(project, output);
+      if (relative === '' || (relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative))) {
+        throw Error('Room B test report must be stored outside the implementation project');
+      }
+      verifyOutputParent(reportFile);
+      if (fs.existsSync(reportFile)) throw Error('Refusing to overwrite a previous evaluation report');
+      const report = sandboxTest({ approvedFile, publicKeyFile, policyFile, projectDir, image });
+      safeOutput(reportFile, JSON.stringify(report, null, 2) + '\n');
+      process.stdout.write('Room B isolated test: ' + report.status + ', approved vectors=' + report.vectorCount + '\n');
+      if (report.status !== 'passed') process.exitCode = 1;
+      return;
+    }
     default:
-      throw Error('Usage: cli.js <validate|approve|verify|scaffold> ...');
+      throw Error('Usage: cli.js <validate|approve|verify|scaffold|sandbox-test> ...');
   }
 }
 
