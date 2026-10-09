@@ -2,3 +2,12 @@ target/
 node_modules/
 dashboard/dist/
 *.tsbuildinfo
+
+# Clean room reviewer secrets and unreviewed local exports
+reviewer-private.pem
+room-a-private.pem
+*.private.pem
+reviewer-receipt.json
+approved-export.json
+proposal.json
+fresh-implementation/
