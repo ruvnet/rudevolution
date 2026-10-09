@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { generateKeyPairSync } = require('node:crypto');
+const { generateKeyPairSync, createHash } = require('node:crypto');
 const { FORMAT, REPORT, validateReport, attestReport, verifyAttestation } = require('../src/clean-room/attestation');
 
 const pair = () => generateKeyPairSync('ed25519');
@@ -94,4 +94,14 @@ test('attestation age, clocks and key types are validated', () => {
   assert.throws(() => attestReport(sample(), { privateKey: publicKey, workerId: 'worker-a', now: NOW }), /private key required/);
   assert.throws(() => attestReport(sample(), { privateKey, workerId: 'INVALID!', now: NOW }), /worker ID/);
   assert.throws(() => verifyAttestation(signed, privateKey, { now: NOW }), /public key required/);
+});
+
+test('the evaluator signing key cannot reuse the Room A review key', () => {
+  const { privateKey, publicKey } = pair();
+  const report = sample();
+  report.publicKeyFingerprint = createHash('sha256')
+    .update(publicKey.export({ type: 'spki', format: 'der' })).digest('hex');
+  assert.throws(() => attestReport(report, {
+    privateKey, workerId: 'worker-a', now: NOW,
+  }), /worker key must differ/);
 });
