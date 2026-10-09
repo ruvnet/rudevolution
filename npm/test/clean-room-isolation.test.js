@@ -231,4 +231,4 @@ test('even Docker exit 0 is not sufficient without verified vector accounting', 
   assert.equal(report.vectorCount, 3);
   assert.equal(report.executedVectors, 0);
   assert.equal(report.passedVectors, 0);
-});
+}));
