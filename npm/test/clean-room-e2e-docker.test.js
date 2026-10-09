@@ -95,7 +95,7 @@ test('full synthetic clean room: two reviewers, isolated author, Docker evaluati
     const privateAnalysis = decompileSource(sourceBytes, {
       useRust: false, reconstruct: false, validate: false, witness: true,
     });
-    assert.equal(privateAnalysis.source.includes(MARKER), true);
+    assert.equal(privateAnalysis.beautifiedSource.includes(MARKER), true);
     const analysisFile = path.join(roomA, 'private-analysis.json');
     fs.writeFileSync(analysisFile, JSON.stringify(privateAnalysis), { mode: 0o600 });
     assert.equal(fs.readFileSync(analysisFile, 'utf8').includes(MARKER), true);
