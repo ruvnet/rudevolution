@@ -79,6 +79,8 @@ test('type, arity, uniqueness, case limits, and unsupported format fail closed',
     s => { s.vectors[0].expected = Infinity; },
     s => { s.vectors[0].operation = 'system'; },
     s => { s.vectors = Array.from({length: 25}, () => s.vectors[0]); },
+    s => { s.vectors = []; },
+    s => { s.vectors = s.vectors.filter(v => v.operation !== 'greet'); },
     s => { s.operations = []; },
     s => { s.target = '../escape'; },
   ];

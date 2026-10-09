@@ -70,7 +70,7 @@ function validateSpec(spec) {
     operations.set(op.name, op);
   }
   if (!Array.isArray(spec.vectors)) fail('vectors must be an array');
-  integerWithin(spec.vectors.length, 0, 24, 'vector count');
+  integerWithin(spec.vectors.length, 1, 24, 'vector count');
   for (const [i, vector] of spec.vectors.entries()) {
     exact(vector, ['operation', 'arguments', 'expected'], `vector ${i}`);
     const op = operations.get(vector.operation);
@@ -78,6 +78,10 @@ function validateSpec(spec) {
     if (!Array.isArray(vector.arguments) || vector.arguments.length !== op.inputs.length) fail(`vector ${i} has incorrect arity`);
     op.inputs.forEach((input, j) => scalar(vector.arguments[j], input.type, `vector ${i} argument ${j}`));
     scalar(vector.expected, op.returns, `vector ${i} expected`);
+  }
+  const coveredOperations = new Set(spec.vectors.map(v => v.operation));
+  for (const name of operations.keys()) {
+    if (!coveredOperations.has(name)) fail(`operation ${name} is missing a compatibility vector`);
   }
   const canonical = canonicalStringify(spec);
   if (Buffer.byteLength(canonical, 'utf8') > 16 * 1024) fail('specification exceeds 16 KiB');

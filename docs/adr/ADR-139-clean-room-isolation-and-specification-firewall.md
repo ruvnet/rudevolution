@@ -55,7 +55,7 @@ Independent implementation scaffold + compatibility tests
 
 ## Deliberately narrow v1
 
-Only ≤16 operations, each with ≤8 inputs of `string`, `number`, or `boolean`, primitive return values (or `void`), four enumerated error types, and ≤24 vectors are accepted. Test strings use a short ASCII grammar and numeric values are finite/bounded. No arbitrary free-text prose is exported to Room B. No reference artifacts are decompiled or synthesized automatically during this workflow.
+Only ≤16 operations, each with ≤8 inputs of `string`, `number`, or `boolean`, primitive return values (or `void`), four enumerated error types, and 1–24 vectors covering every operation are accepted. Test strings use a short ASCII grammar and numeric values are finite/bounded. No arbitrary free-text prose is exported to Room B. No reference artifacts are decompiled or synthesized automatically during this workflow.
 
 These restrictions limit expressiveness but make the first gate straightforward to inspect and test. JSON and simple scalar vectors can **still covertly encode protected information**. Human review and organizational DLP controls are mandatory independently of schema validity.
 
