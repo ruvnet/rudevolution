@@ -129,7 +129,7 @@ test('Docker args allow only one read-only stage mount and deny network, privile
   assert.throws(() => dockerArgs('/tmp/with,malicious', IMAGE, 'rudevolution-b-' + 'a'.repeat(24)), /rejected/);
   assert.throws(() => dockerArgs('/tmp/safe', 'node:22-alpine', 'rudevolution-b-' + 'a'.repeat(24)), /immutable sha256/);
   assert.throws(() => dockerArgs('/tmp/safe', IMAGE, 'contaminated'), /rejected/);
-}));
+});
 
 test('isolated runner mounts only a verified minimal staging copy and produces hashed evidence', () => scoped(env => {
   const invoked = [];
