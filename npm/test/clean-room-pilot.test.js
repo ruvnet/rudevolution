@@ -210,7 +210,7 @@ test('signed independent Room B evaluation produces linked, replay-resistant led
   assert.equal(fs.readFileSync(ledgerFile,'utf8').includes(SECRET),false);
   assert.equal(readLedger(ledgerFile,{expectedHead:first.checkpoint.head}).sequence,1);
   assert.throws(() => evaluateIntake(options),/independent checkpoint/);
-  assert.equal(invoked.count,2,'rollback attempt may evaluate but cannot append an invalid ledger');
+  assert.equal(invoked.count,1,'stale external checkpoint must fail before starting Docker');
   const second = evaluateIntake({...options,expectedHead:first.checkpoint.head});
   assert.equal(second.checkpoint.sequence,2);
   assert.notEqual(second.checkpoint.head,first.checkpoint.head);
