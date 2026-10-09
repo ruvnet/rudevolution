@@ -37,7 +37,7 @@ It includes a standalone Rust library, a Node analysis API, and a browser dashbo
 
 ## Clean Room: reviewed, signed specification handoff
 
-**New developer preview:** [Clean Room usage](docs/clean-room/README.md) · [ADR 139: room separation and specification firewall](docs/adr/ADR-139-clean-room-isolation-and-specification-firewall.md) · [ADR 140: Ed25519 approvals and compatibility evidence](docs/adr/ADR-140-clean-room-attestation-and-compatibility-evidence.md).
+**Developer preview:** [Clean Room usage](docs/clean-room/README.md) · [ADR 139: specification firewall](docs/adr/ADR-139-clean-room-isolation-and-specification-firewall.md) · [ADR 140: signed approvals](docs/adr/ADR-140-clean-room-attestation-and-compatibility-evidence.md) · [ADR 141: isolated evaluation](docs/adr/ADR-141-room-b-isolated-evaluation.md).
 
 The optional `npm/src/clean-room` workflow allows analysts to write a tightly constrained *interface-only* contract in Room A, have an independent reviewer explicitly approve it with an Ed25519 signing key, and release **only** the signed contract to an isolated Room B. The Room B verifier checks the signature against an independently trusted public key before generating implementation stubs and public compatibility tests. It never executes third-party reference code or imports ruDevolution decompiler output. The reviewer receipt and private key remain in Room A.
 
@@ -46,6 +46,8 @@ npm run test:cleanroom
 npm run cleanroom -- validate examples/clean-room/calculator.spec.json
 # See docs/clean-room/README.md for the separate-room approval and scaffold commands.
 ```
+
+**Optional offline Room B execution:** `sandbox-test` revalidates a separately pinned reviewer, public key and immutable Docker image, stages only three allowlisted files, and runs independent compatibility tests in a constrained local Docker container. This constrains evaluation, not the authoring agent or upstream source access. See the [isolated runner guide](docs/clean-room/README.md#optional-room-b-isolated-evaluation).
 
 **Important boundary:** The CLI does not provision independent OS identities, prevent covert data encoded inside permitted scalars, attest a human reviewer, establish a license exception, or prove functional equivalence. Independent source access isolation, human evidence review, and legal authorization are required before describing a deployment as clean room.
 
