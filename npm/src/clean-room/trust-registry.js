@@ -32,7 +32,7 @@ function iso(value) {
 function publicKey(value) {
   let key;
   try {
-    if (typeof value !== 'string' || Buffer.byteLength(value) > 4096) reject('key too large');
+    if (!(typeof value === 'string' || Buffer.isBuffer(value)) || Buffer.byteLength(value) > 4096) reject('key too large');
     key = createPublicKey(value);
   } catch (error) { reject('invalid public key'); }
   if (key.type !== 'public' || key.asymmetricKeyType !== 'ed25519') reject('Ed25519 public key required');
