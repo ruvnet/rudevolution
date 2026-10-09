@@ -16,8 +16,8 @@ Add an **optional Linux-only Room B evaluation command** which fails closed unle
 
 1. A versioned Room B trust policy independently pins an Ed25519 SPKI fingerprint, signed reviewer, target, immutable container image digest, maximum approval age and expiry time.
 2. The signed handoff is verified again against the trusted public key and matching policy before touching any implementation or creating any worker directory.
-3. Room B's project contains **exactly four expected scaffold files**. The approved contract, compatibility runner and approval summary must match the verified scaffold byte for byte. Only \`implementation.mjs\` may change. Symlinks, hardlinks, extra files, changed tests, changed contracts and size violations fail.
-4. A temporary staging directory contains exactly \`contract.json\`, \`compat.test.mjs\` and \`implementation.mjs\`. The original project directory, signed artifact, public key, reviewer receipt, Room A sources, logs and credentials are **not mounted** in the container.
+3. Room B's project contains **exactly four expected scaffold files**. The approved contract, compatibility runner and approval summary must match the verified scaffold byte for byte. Only `implementation.mjs` may change. Symlinks, hardlinks, extra files, changed tests, changed contracts and size violations fail.
+4. A temporary staging directory contains exactly `contract.json`, `compat.test.mjs` and `implementation.mjs`. The original project directory, signed artifact, public key, reviewer receipt, Room A sources, logs and credentials are **not mounted** in the container.
 5. Docker runs on the **local Linux Unix socket** only, with no network, read-only root and input bind, all Linux capabilities dropped, no-new-privileges, UID 65534, 64 PID limit, 256 MiB memory limit, one CPU and a 60-second subprocess deadline. The chosen digest must be already installed. No automatic pull is permitted at evaluation time.
 6. The test runner executes only the independent implementation against the signed, allowlisted compatibility vectors. CLI writes a small JSON report outside the implementation tree with approval/spec digests, public-key fingerprint, implementation hash, runtime digest, vector count, outcome and hashes of captured stdout/stderr, without exposing raw logs.
 7. Timed-out runs trigger Docker container removal. Cleanup failure is an error, not a successful result. Temporary stage files are removed on completion.
@@ -26,7 +26,7 @@ No Docker socket, agent credentials, Room A analysis output, entire repository, 
 
 ## Data flow
 
-\`\`\`text
+```text
  Room A                                   Room B (separate tenant / VM)
  original source                          trusted reviewer key and policy
      |                                               |
@@ -47,7 +47,7 @@ No Docker socket, agent credentials, Room A analysis output, entire repository, 
                                                      |
                                                      v
                                        hashed evaluation report (Room B)
-\`\`\`
+```
 
 ## Threats and residual risks
 
@@ -57,9 +57,9 @@ No Docker socket, agent credentials, Room A analysis output, entire repository, 
 | Mutated interface contract or test harness | Signature verification and byte-for-byte scaffold regeneration | Legitimate reviewer can approve undesirable data; covert encoding in permitted scalar vectors still possible |
 | Stolen reviewer key / forged claimed review | Out-of-band fingerprint, target/reviewer allowlist, expiry and age window | No online revocation, hardware-backed custody or proof a human reviewed |
 | Malicious model-generated code | Offline, read-only, unprivileged container and bounded resources | Docker daemon access is privileged; kernel/container escape, runtime supply-chain compromise and local host compromise remain |
-| Docker image substitution | Room B trust policy fixes image by SHA256 digest; \`--pull=never\` | Trusted image acquisition/scan and digest policy governance are external |
+| Docker image substitution | Room B trust policy fixes image by SHA256 digest; `--pull=never` | Trusted image acquisition/scan and digest policy governance are external |
 | Host secrets through mounts | Staged copy is the only bind mount | Full docker daemon control on a host containing Room A data would still be unsafe |
-| Report manipulation | Exclusive output with digests and fixed fields | Unsigned local report can be edited later; remote attestation and signed ledger are separate future controls |
+| Report manipulation | Exclusive v2 report with optional worker-key Ed25519 attestation (ADR 142) | Unsigned reports remain editable; signatures do not prove a trustworthy host or legal independence |
 | Unsafe inference that passed fixtures prove equivalence | Report records only vector count and pass/fail | Unseen inputs, stateful protocols, asynchronous behavior and performance are not covered |
 
 ## Safety invariants
@@ -80,14 +80,18 @@ Unit tests inject a fake Docker client to inspect mount arguments and staged fil
 
 Run:
 
-\`\`\`bash
+```bash
 npm run test:cleanroom
-\`\`\`
+```
 
-The real Docker test is enabled when \`RUDEVOLUTION_TEST_IMAGE\` references a locally available, pinned image digest. It is intentionally skipped without that environment variable; the CI job supplies it.
+The real Docker test is enabled when `RUDEVOLUTION_TEST_IMAGE` references a locally available, pinned image digest. It is intentionally skipped without that environment variable; the CI job supplies it.
 
 These checks establish a narrow, reproducible execution boundary **for the evaluation run**, not source independence of the implementer or formal noninterference. Production use still requires a separate Room B OS identity or VM, operator-reviewed legal permissions, image security patching, isolated model context, key lifecycle and an external evidence ledger.
 
 ## Rollback
 
-Disable \`sandbox-test\` and revert this runner/CI suite; v1 \`validate\`, \`approve\`, \`verify\` and \`scaffold\` remain unaffected. Revoke any exposed reviewer keys through an external trust policy and prevent reuse of old worker images.
+Disable `sandbox-test` and revert this runner/CI suite; v1 `validate`, `approve`, `verify` and `scaffold` remain unaffected. Revoke any exposed reviewer keys through an external trust policy and prevent reuse of old worker images.
+
+## Security follow-up: vector execution and evidence
+
+[ADR 142](ADR-142-vector-evidence-attestation.md) supersedes the original exit-code-only evaluation criterion. The hardened runner isolates every approved vector in its own subprocess, verifies the final TAP vector count, and supports optional independent Ed25519 signing of the v2 evaluation report. The implementation author still needs an actually separate Room B context and an independent review of test sufficiency.
