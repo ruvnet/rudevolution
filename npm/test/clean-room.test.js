@@ -149,9 +149,11 @@ test('CLI enforces explicit reviewer approval, signing key isolation and distinc
     const changedContract = JSON.parse(originalContract);
     changedContract.vectors[0].expected = 100;
     fs.writeFileSync(localContract, JSON.stringify(changedContract));
+    fs.writeFileSync(path.join(generated, 'implementation.mjs'), "import { writeFileSync } from 'node:fs';\nwriteFileSync('imported.marker', 'executed');\nexport function add(a,b){return a+b;}\nexport function greet(name){return 'Hello '+name;}\n");
     const modifiedRun = spawnSync(process.execPath, ['compat.test.mjs'], { cwd: generated, encoding: 'utf8', timeout: 15000 });
     assert.notEqual(modifiedRun.status, 0);
     assert.match(modifiedRun.stderr + modifiedRun.stdout, /integrity mismatch/);
+    assert.equal(fs.existsSync(path.join(generated, 'imported.marker')), false, 'untrusted implementation must not be imported before contract integrity check');
     fs.writeFileSync(localContract, originalContract);
     // Tampering with signed artifact must not create a Room B implementation directory.
     const tampered = path.join(roomB, 'tampered.json');
