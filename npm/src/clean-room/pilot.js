@@ -18,7 +18,7 @@ const { readRegular, sandboxTest } = require('./isolated-runner');
 const { verifyRegistry, findTrusted, fingerprint } = require('./trust-registry');
 const { verifyRelease } = require('./release');
 const { attestReport } = require('./attestation');
-const { appendEvidence } = require('./evidence-ledger');
+const { appendEvidence, readLedger } = require('./evidence-ledger');
 
 function reject(message) { throw new Error('Clean room pilot rejected: ' + message); }
 function json(filename, limit) {
@@ -91,6 +91,9 @@ function evaluateIntake({
   policyFile, projectDir, image, workerPrivateKeyFile, workerId,
   ledgerFile, expectedHead, now = new Date(), spawn = undefined,
 }) {
+  // Fail before Docker or signing if the external ledger checkpoint is stale.
+  // This avoids spending compute on a result that cannot be committed safely.
+  readLedger(ledgerFile, { expectedHead });
   const checked = loadIntake({ releaseFile, registryFile, rootPublicKeyFile, minimumRevision, now });
   const worker = findTrusted(checked.trusted, 'worker', workerId, { now });
   const signer = readSigningKey(workerPrivateKeyFile);
