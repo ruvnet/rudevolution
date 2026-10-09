@@ -127,7 +127,8 @@ test('Docker args allow only one read-only stage mount and deny network, privile
   const mounts = args.filter(item => item.startsWith('--mount='));
   assert.equal(mounts.length, 1);
   assert.match(mounts[0], /^--mount=type=bind,source=\/tmp\/rudevolution-room-b-example,target=\/work,readonly$/);
-  assert.equal(args.at(-3), IMAGE);
+  assert.equal(args.at(-4), IMAGE);
+  assert(args.includes('--test-reporter=tap'));
   assert.throws(() => dockerArgs('/tmp/with,malicious', IMAGE, 'rudevolution-b-' + 'a'.repeat(24)), /rejected/);
   assert.throws(() => dockerArgs('/tmp/safe', 'node:22-alpine', 'rudevolution-b-' + 'a'.repeat(24)), /immutable sha256/);
   assert.throws(() => dockerArgs('/tmp/safe', IMAGE, 'contaminated'), /rejected/);
