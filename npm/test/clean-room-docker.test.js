@@ -50,6 +50,7 @@ test('real Docker Room B denies Room A filesystem, network and writes while test
       target: spec.target,
       reviewer: 'independent.reviewer',
       publicKeyFingerprint: receipt.publicKeyFingerprint,
+      runtimeImage: IMAGE,
       expiresAt,
       maxApprovalAgeHours: 24,
     };

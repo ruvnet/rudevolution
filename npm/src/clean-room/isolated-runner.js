@@ -38,12 +38,14 @@ function iso(value) {
     /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) &&
     Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
 }
-function checkPolicy(policy, verified, now = new Date()) {
-  fields(policy, ['format', 'target', 'reviewer', 'publicKeyFingerprint', 'expiresAt', 'maxApprovalAgeHours'], 'policy');
+function checkPolicy(policy, verified, now = new Date(), requestedImage = undefined) {
+  fields(policy, ['format', 'target', 'reviewer', 'publicKeyFingerprint', 'runtimeImage', 'expiresAt', 'maxApprovalAgeHours'], 'policy');
   if (policy.format !== POLICY_FORMAT) deny('unsupported policy format');
   if (typeof policy.target !== 'string' || !TARGET.test(policy.target)) deny('invalid target');
   if (typeof policy.reviewer !== 'string' || !REVIEWER.test(policy.reviewer)) deny('invalid reviewer');
   if (typeof policy.publicKeyFingerprint !== 'string' || !HEX.test(policy.publicKeyFingerprint)) deny('invalid fingerprint');
+  assertImage(policy.runtimeImage);
+  if (requestedImage !== undefined && policy.runtimeImage !== requestedImage) deny('runtime image is not authorized by Room B policy');
   if (!iso(policy.expiresAt)) deny('invalid policy expiry');
   if (!Number.isInteger(policy.maxApprovalAgeHours) || policy.maxApprovalAgeHours < 1 || policy.maxApprovalAgeHours > 720) deny('invalid approval age limit');
   if (!(now instanceof Date) || !Number.isFinite(now.getTime())) deny('invalid clock');
@@ -98,11 +100,11 @@ function strictProject(directory) {
   }
   return buffers;
 }
-function prepareRoomB({ approvedFile, publicKeyFile, policyFile, projectDir, now = new Date() }) {
+function prepareRoomB({ approvedFile, publicKeyFile, policyFile, projectDir, image = undefined, now = new Date() }) {
   const approval = readJson(approvedFile, 24 * 1024);
   const key = readRegular(publicKeyFile, 8192);
   const policy = readJson(policyFile, 4096);
-  const verified = checkPolicy(policy, verifyApproved(approval, key), now);
+  const verified = checkPolicy(policy, verifyApproved(approval, key), now, image);
   const reference = scaffoldFiles(approval, key);
   const supplied = strictProject(projectDir);
   for (const name of REQUIRED) {
@@ -145,7 +147,7 @@ function sandboxTest(options, spawn = spawnSync) {
   if (process.platform !== 'linux') deny('isolated runner requires Linux');
   const { approvedFile, publicKeyFile, policyFile, projectDir, image, now = new Date() } = options;
   assertImage(image);
-  const prepared = prepareRoomB({ approvedFile, publicKeyFile, policyFile, projectDir, now });
+  const prepared = prepareRoomB({ approvedFile, publicKeyFile, policyFile, projectDir, image, now });
   const stageDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rudevolution-room-b-'));
   const containerName = 'rudevolution-b-' + randomBytes(12).toString('hex');
   let started = false;

@@ -39,6 +39,7 @@ function setupRoom() {
     reviewer: 'reviewer.one',
     target: 'calculator-compatibility',
     publicKeyFingerprint: receipt.publicKeyFingerprint,
+    runtimeImage: IMAGE,
     expiresAt: '2026-12-31T00:00:00.000Z',
     maxApprovalAgeHours: 168,
   };
@@ -65,6 +66,7 @@ test('policy gates signer, reviewer, target, approval age and trust expiration',
   const change = (key, val) => ({ ...policy, [key]: val });
   for (const candidate of [
     change('publicKeyFingerprint', 'a'.repeat(64)),
+    change('runtimeImage', 'node@sha256:' + 'a'.repeat(64)),
     change('reviewer', 'other.reviewer'),
     change('target', 'other-target'),
     change('expiresAt', '2026-10-08T21:00:00.000Z'),
@@ -189,6 +191,7 @@ test('wrong public key, stale approval and invalid image prevent runner invocati
   assert.throws(() => sandboxTest({ ...env.options, now: new Date('2026-11-08T00:00:00.000Z') }, runner), /too old/);
   assert.equal(called, false);
   assert.throws(() => sandboxTest({ ...env.options, image: 'node:latest' }, runner), /immutable sha256/);
+  assert.throws(() => sandboxTest({ ...env.options, image: 'node@sha256:' + 'a'.repeat(64) }, runner), /image is not authorized/);
   assert.equal(called, false);
 }));
 
