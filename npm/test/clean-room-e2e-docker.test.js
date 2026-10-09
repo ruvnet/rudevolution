@@ -141,6 +141,8 @@ test('full synthetic clean room: two reviewers, isolated author, Docker evaluati
     fs.mkdirSync(files.authorStage,{mode:0o777});
     fs.chmodSync(files.authorStage,0o777);
     fs.copyFileSync(path.join(files.project,'contract.json'),path.join(files.authorStage,'contract.json'));
+    // Docker UID 65534 may read only the PUBLIC contract; never grant it access to private Room A files.
+    fs.chmodSync(path.join(files.authorStage,'contract.json'),0o444);
     const syntheticAuthor=[
       "import { existsSync, readFileSync, writeFileSync } from 'node:fs';",
       "import { networkInterfaces } from 'node:os';",
