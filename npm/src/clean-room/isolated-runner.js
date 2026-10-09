@@ -13,7 +13,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { randomBytes } = require('node:crypto');
 const { spawnSync } = require('node:child_process');
-const { verifyApproved, scaffoldFiles, sha256 } = require('./index');
+const { verifyApproved, scaffoldFiles, canonicalStringify, sha256 } = require('./index');
 
 const POLICY_FORMAT = 'rudevolution.cleanroom.policy/v1';
 const REPORT_FORMAT = 'rudevolution.cleanroom.sandbox-report/v2';
@@ -115,6 +115,8 @@ function prepareRoomB({ approvedFile, publicKeyFile, policyFile, projectDir, ima
   // or a project directory containing arbitrary files.
   return {
     verified,
+    policySha256: sha256(canonicalStringify(policy)),
+    harnessSha256: sha256(reference['compat.test.mjs']),
     vectorCount: verified.spec.vectors.length,
     files: {
       'contract.json': reference['contract.json'],
@@ -195,7 +197,9 @@ function sandboxTest(options, spawn = spawnSync) {
     const report = {
       format: REPORT_FORMAT,
       approvalSha256: prepared.verified.approvalSha256,
-      specSha256: sha256(require('./index').canonicalStringify(prepared.verified.spec)),
+      specSha256: sha256(canonicalStringify(prepared.verified.spec)),
+      policySha256: prepared.policySha256,
+      harnessSha256: prepared.harnessSha256,
       publicKeyFingerprint: prepared.verified.publicKeyFingerprint,
       implementationSha256: sha256(prepared.files['implementation.mjs']),
       image, vectorCount: prepared.vectorCount,
