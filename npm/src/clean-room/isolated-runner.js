@@ -142,7 +142,7 @@ function dockerArgs(stageDir, image, containerName) {
     '--tmpfs=/tmp:rw,noexec,nosuid,nodev,size=16m,mode=1777',
     '--mount=type=bind,source=' + stageDir + ',target=/work,readonly',
     '--workdir=/work', '--env=HOME=/tmp', '--env=TMPDIR=/tmp',
-    '--entrypoint=node', image, '--test', 'compat.test.mjs',
+    '--entrypoint=node', image, '--test', '--test-reporter=tap', 'compat.test.mjs',
   ];
 }
 /**
