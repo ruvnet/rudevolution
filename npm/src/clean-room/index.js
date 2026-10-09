@@ -150,9 +150,11 @@ function scaffoldFiles(artifact, publicKey) {
     const comments = op.inputs.map(x => ` * @param {${x.type}} ${x.name}`).join('\n');
     return `/**\n${comments ? `${comments}\n` : ''} * @returns {${op.returns === 'void' ? 'undefined' : op.returns}}\n */\nexport function ${op.name}(${args}) {\n  throw new Error('UNIMPLEMENTED');\n}`;
   }).join('\n\n');
-  const runner = `import test from 'node:test';\nimport assert from 'node:assert/strict';\nimport { readFileSync } from 'node:fs';\nimport * as implementation from './implementation.mjs';\nconst spec = JSON.parse(readFileSync(new URL('./contract.json', import.meta.url), 'utf8'));\nfor (const [index, vector] of spec.vectors.entries()) {\n  test(\`compatibility vector \${index}: \${vector.operation}\`, () => {\n    const actual = implementation[vector.operation](...vector.arguments);\n    assert.deepStrictEqual(actual, vector.expected === null && spec.operations.find(op => op.name === vector.operation).returns === 'void' ? undefined : vector.expected);\n  });\n}\n`;
+  const contractText = `${canonicalStringify(spec)}\n`;
+  const contractDigest = sha256(contractText);
+  const runner = `import test from 'node:test';\nimport assert from 'node:assert/strict';\nimport { createHash } from 'node:crypto';\nimport { readFileSync } from 'node:fs';\nimport * as implementation from './implementation.mjs';\nconst contractBytes = readFileSync(new URL('./contract.json', import.meta.url));\nconst observedDigest = createHash('sha256').update(contractBytes).digest('hex');\nif (observedDigest !== '${contractDigest}') throw new Error('Approved contract integrity mismatch');\nconst spec = JSON.parse(contractBytes.toString('utf8'));\nfor (const [index, vector] of spec.vectors.entries()) {\n  test(\`compatibility vector \${index}: \${vector.operation}\`, () => {\n    const actual = implementation[vector.operation](...vector.arguments);\n    assert.deepStrictEqual(actual, vector.expected === null && spec.operations.find(op => op.name === vector.operation).returns === 'void' ? undefined : vector.expected);\n  });\n}\n`;
   return {
-    'contract.json': `${canonicalStringify(spec)}\n`,
+    'contract.json': contractText,
     'implementation.mjs': `${fnDocs}\n`,
     'compat.test.mjs': runner,
     'APPROVAL.txt': `Approved source-independent interface contract\nTarget: ${spec.target}\nReviewer: ${verified.reviewer}\nApproved UTC: ${verified.approvedAt}\nArtifact SHA-256: ${verified.approvalSha256}\nPinned key fingerprint: ${verified.publicKeyFingerprint}\nNo source code is transferred or made available by this tool.\n`,

@@ -143,6 +143,16 @@ test('CLI enforces explicit reviewer approval, signing key isolation and distinc
     fs.writeFileSync(path.join(generated, 'implementation.mjs'), "export function add(a,b) {return a+b;}\nexport function greet(name) {return 'Hello '+name;}\n");
     const after = spawnSync(process.execPath, ['compat.test.mjs'], { cwd: generated, encoding: 'utf8', timeout: 15000 });
     assert.equal(after.status, 0, after.stderr + after.stdout);
+    // Even after scaffold approval, test vectors remain bound to the signed contract.
+    const localContract = path.join(generated, 'contract.json');
+    const originalContract = fs.readFileSync(localContract, 'utf8');
+    const changedContract = JSON.parse(originalContract);
+    changedContract.vectors[0].expected = 100;
+    fs.writeFileSync(localContract, JSON.stringify(changedContract));
+    const modifiedRun = spawnSync(process.execPath, ['compat.test.mjs'], { cwd: generated, encoding: 'utf8', timeout: 15000 });
+    assert.notEqual(modifiedRun.status, 0);
+    assert.match(modifiedRun.stderr + modifiedRun.stdout, /integrity mismatch/);
+    fs.writeFileSync(localContract, originalContract);
     // Tampering with signed artifact must not create a Room B implementation directory.
     const tampered = path.join(roomB, 'tampered.json');
     const altered = JSON.parse(fs.readFileSync(transferred, 'utf8')); altered.spec.vectors[0].expected = 42;
