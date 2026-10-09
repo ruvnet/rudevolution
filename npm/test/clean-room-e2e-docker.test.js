@@ -7,6 +7,7 @@ const path = require('node:path');
 const { generateKeyPairSync } = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const { approveSpec } = require('../src/clean-room');
+const { decompileSource } = require('../src/decompiler');
 const { fingerprint } = require('../src/clean-room/trust-registry');
 const { ZERO, readLedger } = require('../src/clean-room/evidence-ledger');
 const { verifyAttestation } = require('../src/clean-room/attestation');
@@ -87,6 +88,18 @@ test('full synthetic clean room: two reviewers, isolated author, Docker evaluati
     // contract and can never be mounted in B or passed to the signer.
     fs.writeFileSync(files.privateSource,'const proprietaryMarker = "'+MARKER+'";\n' +
       'function hiddenImplementation(a,b){return a+b;}\n',{mode:0o600});
+    // Exercise ruDevolution's actual static analyzer entirely in Room A.
+    // The resulting source-bearing analysis remains private and NEVER crosses
+    // the approved release boundary or the independent Docker author mount.
+    const sourceBytes = fs.readFileSync(files.privateSource, 'utf8');
+    const privateAnalysis = decompileSource(sourceBytes, {
+      useRust: false, reconstruct: false, validate: false, witness: true,
+    });
+    assert.equal(privateAnalysis.source.includes(MARKER), true);
+    const analysisFile = path.join(roomA, 'private-analysis.json');
+    fs.writeFileSync(analysisFile, JSON.stringify(privateAnalysis), { mode: 0o600 });
+    assert.equal(fs.readFileSync(analysisFile, 'utf8').includes(MARKER), true);
+
     useKey(files.primaryKey,privatePem(keys.primary));
     useKey(files.secondaryKey,privatePem(keys.secondary));
     useKey(files.rootKey,privatePem(keys.root));
