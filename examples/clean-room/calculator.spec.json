@@ -1,0 +1,23 @@
+{
+  "format": "rudevolution.cleanroom.spec/v1",
+  "target": "calculator-compatibility",
+  "operations": [
+    {
+      "name": "add",
+      "inputs": [{ "name": "a", "type": "number" }, { "name": "b", "type": "number" }],
+      "returns": "number",
+      "errors": ["invalid_argument"]
+    },
+    {
+      "name": "greet",
+      "inputs": [{ "name": "name", "type": "string" }],
+      "returns": "string",
+      "errors": []
+    }
+  ],
+  "vectors": [
+    { "operation": "add", "arguments": [2, 3], "expected": 5 },
+    { "operation": "add", "arguments": [10, -4], "expected": 6 },
+    { "operation": "greet", "arguments": ["Ada"], "expected": "Hello Ada" }
+  ]
+}

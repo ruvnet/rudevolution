@@ -18,6 +18,7 @@ jobs:
           node-version: ${{ matrix.node }}
       - run: python3 scripts/check_visuals.py
       - run: npm test
+      - run: npm run test:cleanroom
       - run: npm run bench
       - run: npm ci --ignore-scripts
         working-directory: dashboard
