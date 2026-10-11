@@ -57,6 +57,12 @@ The [two-room end to end pilot](docs/clean-room/E2E.md) adds independently signe
 
 **Do not use this as evidence of lawful independent authorship.** The CI pilot uses simulated reviewers and containers on one runner. Production needs separate Room A and Room B identities, machines, model contexts, memories, keys and audited transfer authority.
 
+## Software factory on Cloudflare
+
+[Open the factory workspace](https://rudevolution-factory.cognitum-consulting-mail.workers.dev/) to sign in, register projects and request runs. Owner-scoped registration uses Cloudflare Access; project and run records live in D1. The existing daily portfolio automation is configured to consume the own-software queue. A queued record is not evidence of a completed build.
+
+Clean-room requests remain awaiting independent review. The factory adapter verifies the existing dual-signed contract and pinned trust registry; separate analysis and implementation environments remain a production prerequisite. See the [factory setup](docs/factory/README.md), [daily queue protocol](docs/factory/QUEUE.md) and [ADR 144](docs/adr/ADR-144-cloudflare-software-factory.md). Run `npm run test:factory` for the authentication, ownership, safe-retry, queue and signed-handoff checks.
+
 ## Reproducible source checkout
 
 ```bash
