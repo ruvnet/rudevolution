@@ -1,0 +1,16 @@
+{
+  "name": "rudevolution-factory",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "cognitum-software-factory.cloudflareaccess.com",
+    "ACCESS_AUD": "99589f0b5159aba803e962b18ebb74e98da8d4afc5e9ecf67f12ef56c2d48af3"
+  },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "rudevolution-factory",
+    "database_id": "b833f87d-5c62-401d-899a-54aa6030e2fe"
+  }]
+}
