@@ -5,6 +5,7 @@
   "workers_dev": true,
   "preview_urls": false,
   "vars": {
+    "OWNER_EMAILS": "ruv@cognitum.one,ruv@ruv.net",
     "ACCESS_TEAM_DOMAIN": "cognitum-software-factory.cloudflareaccess.com",
     "ACCESS_AUD": "99589f0b5159aba803e962b18ebb74e98da8d4afc5e9ecf67f12ef56c2d48af3"
   },

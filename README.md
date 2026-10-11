@@ -59,7 +59,7 @@ The [two-room end to end pilot](docs/clean-room/E2E.md) adds independently signe
 
 ## Software factory on Cloudflare
 
-[Open the factory workspace](https://rudevolution-factory.cognitum-consulting-mail.workers.dev/) to sign in, register projects and request runs. Owner-scoped registration uses Cloudflare Access; project and run records live in D1. The existing daily portfolio automation is configured to consume the own-software queue. A queued record is not evidence of a completed build.
+[Open the factory workspace](https://rudevolution-factory.cognitum-consulting-mail.workers.dev/) to sign in, register projects and request runs. Email-verified registration uses Cloudflare Access; project and run records live in D1. Free workspaces allow one project and one run request per rolling 24 hours. Public run requests require authorization before execution. The Pro CTA records interest; paid checkout is not implemented. The existing daily portfolio automation is configured to consume the own-software queue. A queued record is not evidence of a completed build.
 
 Clean-room requests remain awaiting independent review. The factory adapter verifies the existing dual-signed contract and pinned trust registry; separate analysis and implementation environments remain a production prerequisite. See the [factory setup](docs/factory/README.md), [daily queue protocol](docs/factory/QUEUE.md) and [ADR 144](docs/adr/ADR-144-cloudflare-software-factory.md). Run `npm run test:factory` for the authentication, ownership, safe-retry, queue and signed-handoff checks.
 
