@@ -52,19 +52,37 @@ export async function handle(request, env, fetcher = fetch) {
     if(url.pathname==='/api/login' && request.method==='GET') return new Response(null,{status:302,headers:{location:'/','cache-control':'no-store'}});
     if(!env.DB) throw new HttpError(503,'Database is not configured');
     const db=env.DB;
-    const registered=await db.prepare('SELECT id, email FROM users WHERE id = ?').bind(user.id).first();
-    if(url.pathname==='/api/session' && request.method==='GET') return json({user:{email:user.email,sub:user.sub},registered:Boolean(registered)});
+    const registered=await db.prepare('SELECT id, email, plan FROM users WHERE id = ?').bind(user.id).first();
+    const trustedPlan=String(env.OWNER_EMAILS||'').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean).includes(user.email.toLowerCase())?'operator':'free';
+    if(registered && registered.plan!==trustedPlan) await db.prepare('UPDATE users SET plan = ? WHERE id = ?').bind(trustedPlan,user.id).run();
+    const plan=registered?trustedPlan:'free';
+    const cutoff=new Date(Date.now()-86400000).toISOString();
+    if(url.pathname==='/api/session' && request.method==='GET') {
+      const projects=registered?await db.prepare('SELECT COUNT(*) AS count FROM projects WHERE owner = ?').bind(user.id).first():{count:0};
+      const runs=registered?await db.prepare('SELECT COUNT(*) AS count FROM runs WHERE owner = ? AND created_at >= ?').bind(user.id,cutoff).first():{count:0};
+      return json({user:{email:user.email,sub:user.sub},registered:Boolean(registered),plan,limits:{projects:plan==='free'?1:null,runs_per_24h:plan==='free'?1:null},usage:{projects:projects.count,runs_last_24h:runs.count}});
+    }
     if(url.pathname==='/api/register' && request.method==='POST') {
       fields(await body(request),[]);
-      await db.prepare('INSERT INTO users (id, email, created_at) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET email = excluded.email').bind(user.id,user.email,new Date().toISOString()).run();
+      const initialPlan=trustedPlan;
+      await db.prepare('INSERT INTO users (id, email, plan, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET email = excluded.email').bind(user.id,user.email,initialPlan,new Date().toISOString()).run();
       return json({user:{id:user.id,email:user.email}});
     }
     if(!registered) throw new HttpError(403,'Registration required');
+    if(url.pathname==='/api/upgrade' && request.method==='POST') {
+      const value=await body(request); fields(value,['message']);
+      if(typeof value.message!=='string' || !value.message.trim() || value.message.length>1000 || /[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(value.message)) throw new HttpError(400,'Invalid upgrade message');
+      const upgrade={id:crypto.randomUUID(),status:'requested',created_at:new Date().toISOString()};
+      await db.prepare('INSERT INTO upgrade_requests (id, owner, message, status, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING').bind(upgrade.id,user.id,value.message.trim(),upgrade.status,upgrade.created_at).run();
+      const saved=await db.prepare("SELECT id, status, created_at FROM upgrade_requests WHERE owner = ? AND status = 'requested'").bind(user.id).first();
+      return json({request:saved},saved.id===upgrade.id?201:200);
+    }
     if(url.pathname==='/api/projects') {
       if(request.method==='GET') return json({projects:(await db.prepare('SELECT id, name, repository, mode, created_at FROM projects WHERE owner = ? ORDER BY created_at DESC LIMIT 100').bind(user.id).all()).results});
       const input=projectInput(await body(request));
       const project={id:crypto.randomUUID(),...input,created_at:new Date().toISOString()};
-      await db.prepare('INSERT INTO projects (id, owner, name, repository, mode, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(project.id,user.id,project.name,project.repository,project.mode,project.created_at).run();
+      const inserted=await db.prepare("INSERT INTO projects (id, owner, name, repository, mode, created_at) SELECT ?, ?, ?, ?, ?, ? WHERE (SELECT plan FROM users WHERE id = ?) = 'operator' OR (SELECT COUNT(*) FROM projects WHERE owner = ?) < 1").bind(project.id,user.id,project.name,project.repository,project.mode,project.created_at,user.id,user.id).run();
+      if(!inserted.meta.changes) throw new HttpError(429,'Free plan allows one project. Request an upgrade.');
       return json({project},201);
     }
     if(url.pathname==='/api/runs') {
@@ -73,9 +91,10 @@ export async function handle(request, env, fetcher = fetch) {
       if(typeof value.project_id!=='string' || !/^[a-f0-9-]{36}$/.test(value.project_id) || typeof value.idempotency_key!=='string' || !/^[a-zA-Z0-9_-]{8,128}$/.test(value.idempotency_key)) throw new HttpError(400,'Invalid run request');
       const project=await db.prepare('SELECT id, mode FROM projects WHERE id = ? AND owner = ?').bind(value.project_id,user.id).first();
       if(!project) throw new HttpError(404,'Project not found');
-      const run={id:crypto.randomUUID(),project_id:project.id,status:project.mode==='cleanroom'?'awaiting_review':'queued',idempotency_key:value.idempotency_key,created_at:new Date().toISOString()};
-      await db.prepare('INSERT INTO runs (id, owner, project_id, status, idempotency_key, created_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(owner, idempotency_key) DO NOTHING').bind(run.id,user.id,run.project_id,run.status,run.idempotency_key,run.created_at).run();
+      const run={id:crypto.randomUUID(),project_id:project.id,status:project.mode==='cleanroom'?'awaiting_review':plan==='operator'?'queued':'awaiting_authorization',idempotency_key:value.idempotency_key,created_at:new Date().toISOString()};
+      await db.prepare("INSERT INTO runs (id, owner, project_id, status, idempotency_key, created_at) SELECT ?, ?, ?, ?, ?, ? WHERE (SELECT plan FROM users WHERE id = ?) = 'operator' OR (SELECT COUNT(*) FROM runs WHERE owner = ? AND created_at >= ?) < 1 ON CONFLICT(owner, idempotency_key) DO NOTHING").bind(run.id,user.id,run.project_id,run.status,run.idempotency_key,run.created_at,user.id,user.id,cutoff).run();
       const saved=await db.prepare('SELECT id, project_id, status, idempotency_key, created_at, updated_at, evidence_url, error_code FROM runs WHERE owner = ? AND idempotency_key = ?').bind(user.id,value.idempotency_key).first();
+      if(!saved) throw new HttpError(429,'Free plan allows one run request per 24 hours. Request an upgrade.');
       if(saved.project_id!==project.id) throw new HttpError(409,'Idempotency key belongs to another project');
       return json({run:saved},saved.id===run.id?201:200);
     }

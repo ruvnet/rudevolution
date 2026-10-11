@@ -18,3 +18,30 @@ function database(){const projects=new Map([['11111111-1111-1111-1111-1111111111
 test('runs enforce project ownership and cleanroom review with idempotency',async()=>{const DB=database(),jwt=await token();const e={...env,DB};const foreign=await handle(request('/api/runs',jwt,{project_id:'22222222-2222-2222-2222-222222222222',idempotency_key:'test-key-123'}),e,fetcher);assert.equal(foreign.status,404);assert.equal(DB.runs.size,0);const payload={project_id:'11111111-1111-1111-1111-111111111111',idempotency_key:'test-key-123'};const first=await handle(request('/api/runs',jwt,payload),e,fetcher);assert.equal(first.status,201);const run=(await first.json()).run;assert.equal(run.status,'awaiting_review');const second=await handle(request('/api/runs',jwt,payload),e,fetcher);assert.equal(second.status,200);assert.equal((await second.json()).run.id,run.id);assert.equal(DB.runs.size,1);});
 test('list queries are scoped to verified subject',async()=>{const DB=database(),jwt=await token();for(const path of ['/api/projects','/api/runs'])assert.equal((await handle(request(path,jwt),{...env,DB},fetcher)).status,200);for(const q of DB.queries.filter(q=>q.sql.includes('ORDER BY')))assert.deepEqual(q.args,['alice']);});
 test('request bodies are bounded and internal errors sanitized',async()=>{const DB=database(),jwt=await token();assert.equal((await handle(request('/api/projects',jwt,{name:'x'.repeat(9000)}),{...env,DB},fetcher)).status,413);const bad={prepare(){throw Error('secret database details');}};const r=await handle(request('/api/session',jwt),{...env,DB:bad},fetcher);assert.equal(r.status,500);assert.deepEqual(await r.json(),{error:'Request failed'});});
+
+import {DatabaseSync} from 'node:sqlite';
+import {readFileSync} from 'node:fs';
+function realDatabase(){const sqlite=new DatabaseSync(':memory:');sqlite.exec(readFileSync(new URL('./schema.sql',import.meta.url),'utf8'));return{sqlite,prepare(sql){return{bind(...args){const stmt=sqlite.prepare(sql);return{async first(){return stmt.get(...args)||null;},async all(){return{results:stmt.all(...args)};},async run(){const result=stmt.run(...args);return{meta:{changes:Number(result.changes)}};}};}};}};}
+test('real SQLite freemium signup, atomic quotas, rolling window, idempotency and authorization',async()=>{
+ const DB=realDatabase();const e={...env,DB,OWNER_EMAILS:'owner@example.com'};const jwt=await token();const call=async(path,value,t=jwt)=>handle(request(path,t,value),e,fetcher);
+ assert.equal((await call('/api/register',{plan:'operator'})).status,400);
+ assert.equal((await call('/api/register',{})).status,200);
+ let session=await(await call('/api/session')).json();assert.equal(session.plan,'free');assert.deepEqual(session.limits,{projects:1,runs_per_24h:1});assert.deepEqual(session.usage,{projects:0,runs_last_24h:0});
+ const p={name:'demo',repository:'https://github.com/ruvnet/demo',mode:'own'};
+ const responses=await Promise.all([call('/api/projects',p),call('/api/projects',p)]);assert.deepEqual(responses.map(r=>r.status).sort(),[201,429]);const project=(await responses.find(r=>r.status===201).json()).project;
+ const runPayload={project_id:project.id,idempotency_key:'real-key-123'};const first=await call('/api/runs',runPayload);assert.equal(first.status,201);const run=(await first.json()).run;assert.equal(run.status,'awaiting_authorization');
+ const repeat=await call('/api/runs',runPayload);assert.equal(repeat.status,200);assert.equal((await repeat.json()).run.id,run.id);
+ assert.equal((await call('/api/runs',{...runPayload,idempotency_key:'another-key'})).status,429);
+ assert.equal((await call('/api/runs',{...runPayload,status:'queued'})).status,400);
+ const bob=await token({sub:'bob',email:'bob@example.com'});await call('/api/register',{},bob);assert.equal((await call('/api/runs',runPayload,bob)).status,404);assert.deepEqual((await(await call('/api/projects',undefined,bob)).json()).projects,[]);
+ const upgrade=await call('/api/upgrade',{message:'Interested in higher limits.'});assert.equal(upgrade.status,201);const repeatedUpgrade=await call('/api/upgrade',{message:'Same request again'});assert.equal(repeatedUpgrade.status,200);assert.equal(DB.sqlite.prepare('SELECT COUNT(*) AS n FROM upgrade_requests').get().n,1);assert.equal(DB.sqlite.prepare('SELECT owner FROM upgrade_requests').get().owner,'alice');assert.equal((await(await call('/api/session')).json()).plan,'free');
+ assert.equal((await call('/api/upgrade',{message:'x',plan:'operator'})).status,400);assert.equal((await call('/api/upgrade',{message:'x'.repeat(1001)})).status,400);
+ // Only the trusted server allowlist can grant or revoke operator access.
+ e.OWNER_EMAILS+=' ,alice@example.com';await call('/api/register',{});assert.equal((await(await call('/api/session')).json()).plan,'operator');e.OWNER_EMAILS='owner@example.com';assert.equal((await(await call('/api/session')).json()).plan,'free');assert.equal(DB.sqlite.prepare('SELECT plan FROM users WHERE id = ?').get('alice').plan,'free');
+ DB.sqlite.prepare('UPDATE runs SET created_at = ? WHERE id = ?').run(new Date(Date.now()-86401000).toISOString(),run.id);
+ const concurrent=await Promise.all([call('/api/runs',{...runPayload,idempotency_key:'concurrent-one'}),call('/api/runs',{...runPayload,idempotency_key:'concurrent-two'})]);assert.deepEqual(concurrent.map(r=>r.status).sort(),[201,429]);
+ const owner=await token({sub:'owner',email:'owner@example.com'});await call('/api/register',{},owner);assert.equal((await(await call('/api/session',undefined,owner)).json()).plan,'operator');
+ const opProject=(await(await call('/api/projects',p,owner)).json()).project;assert.equal((await call('/api/projects',p,owner)).status,201);assert.equal((await(await call('/api/runs',{project_id:opProject.id,idempotency_key:'owner-run-123'},owner)).json()).run.status,'queued');
+ const clean=(await(await call('/api/projects',{...p,mode:'cleanroom'},owner)).json()).project;assert.equal((await(await call('/api/runs',{project_id:clean.id,idempotency_key:'owner-clean-123'},owner)).json()).run.status,'awaiting_review');
+ DB.sqlite.close();
+});
