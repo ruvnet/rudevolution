@@ -84,6 +84,7 @@ test('verified visitor can create free workspace; upgrade records interest witho
   assert.equal(harness.get('notice').textContent, 'Request saved. No charge or plan change.');
   assert.equal(harness.get('plan-label').textContent, 'Free workspace');
   assert.equal(harness.calls.filter(call => call.path === '/api/upgrade').length, 1);
+  assert.equal(harness.calls.filter(call => call.path === '/api/session').length, 2, 'registration refresh reuses its verified session');
 });
 
 test('failed upgrade does not claim success and displays server text without HTML injection', async () => {
