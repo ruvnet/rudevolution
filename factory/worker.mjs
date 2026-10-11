@@ -1,5 +1,26 @@
 import { html, css, js } from './ui.mjs';
 const encoder = new TextEncoder();
+// Only public, identity-independent representations belong in this cache.
+const publicAssets = Promise.all([css, js].map(async content => {
+  const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(content)));
+  return { content, version: Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('') };
+})).then(async ([style, script]) => {
+  const page = html.replace('href="/style.css"', 'href="/style.css?v=' + style.version + '"').replace('src="/app.js"', 'src="/app.js?v=' + script.version + '"');
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(page)));
+  return { '/style.css': style, '/app.js': script, '/': { content: page, version: Array.from(digest, b => b.toString(16).padStart(2, '0')).join('') } };
+});
+async function publicResponse(request, url) {
+  const asset = (await publicAssets)[url.pathname];
+  const versioned = url.pathname !== '/' && url.searchParams.get('v') === asset.version;
+  const headers = new Headers({ 'content-type': url.pathname === '/' ? 'text/html; charset=utf-8' : url.pathname === '/style.css' ? 'text/css; charset=utf-8' : 'application/javascript; charset=utf-8', 'cache-control': versioned ? 'public, max-age=31536000, immutable' : 'public, no-cache', 'etag': '"' + asset.version + '"', 'x-content-type-options': 'nosniff' });
+  if (url.pathname === '/') {
+    headers.set('content-security-policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+    headers.set('referrer-policy', 'no-referrer');
+  }
+  const matches = (request.headers.get('if-none-match') || '').split(',').map(value => value.trim().replace(/^W\//, ''));
+  if (matches.includes('*') || matches.includes(headers.get('etag'))) return new Response(null, { status: 304, headers });
+  return new Response(request.method === 'HEAD' ? null : asset.content, { headers });
+}
 const MAX_BODY = 8192;
 class HttpError extends Error { constructor(status, message) { super(message); this.status = status; } }
 const json = (value, status = 200) => new Response(JSON.stringify(value), {status, headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
@@ -43,8 +64,7 @@ export async function handle(request, env, fetcher = fetch) {
   try {
     if(url.pathname==='/login' && request.method==='GET') return new Response(null,{status:302,headers:{location:'/api/login','cache-control':'no-store'}});
     if(url.pathname==='/api/health' && request.method==='GET') return json({ready:Boolean(env.DB && env.ACCESS_TEAM_DOMAIN && env.ACCESS_AUD),execution_enabled:false});
-    if(request.method==='GET' && ['/style.css','/app.js'].includes(url.pathname)) return new Response(url.pathname==='/style.css'?css:js,{headers:{'content-type':url.pathname==='/style.css'?'text/css; charset=utf-8':'application/javascript; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
-    if(url.pathname==='/' && request.method==='GET') return new Response(html,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','content-security-policy':"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",'referrer-policy':'no-referrer'}});
+    if(['GET','HEAD'].includes(request.method) && ['/','/style.css','/app.js'].includes(url.pathname)) return publicResponse(request,url);
     if(!url.pathname.startsWith('/api/')) throw new HttpError(404,'Not found');
     if(!['GET','POST'].includes(request.method)) throw new HttpError(405,'Method not allowed');
     if(request.method==='POST' && request.headers.get('origin')!==url.origin) throw new HttpError(403,'Same-origin request required');
