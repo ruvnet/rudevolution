@@ -14,7 +14,7 @@ async function publicResponse(request, url) {
   const versioned = url.pathname !== '/' && url.searchParams.get('v') === asset.version;
   const headers = new Headers({ 'content-type': url.pathname === '/' ? 'text/html; charset=utf-8' : url.pathname === '/style.css' ? 'text/css; charset=utf-8' : 'application/javascript; charset=utf-8', 'cache-control': versioned ? 'public, max-age=31536000, immutable' : 'public, no-cache', 'etag': '"' + asset.version + '"', 'x-content-type-options': 'nosniff' });
   if (url.pathname === '/') {
-    headers.set('content-security-policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+    headers.set('content-security-policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; media-src https://github.com/ruvnet/readme-proof/releases/download/ https://release-assets.githubusercontent.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     headers.set('referrer-policy', 'no-referrer');
   }
   const matches = (request.headers.get('if-none-match') || '').split(',').map(value => value.trim().replace(/^W\//, ''));
