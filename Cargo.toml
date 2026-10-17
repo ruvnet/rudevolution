@@ -40,5 +40,8 @@ harness = false
 name = "bench_pipeline"
 harness = false
 
+[[example]]
+name = "cost_cascade"
+
 [lib]
 crate-type = ["rlib"]

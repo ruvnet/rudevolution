@@ -27,6 +27,7 @@
 //! ```
 
 pub mod beautifier;
+pub mod cascade;
 pub mod error;
 pub mod graph;
 pub mod inferrer;
@@ -41,11 +42,36 @@ pub mod tree;
 pub mod types;
 pub mod witness;
 
+pub use cascade::{
+    CascadeInferrer, CascadeOutcome, CascadeStats, CorpusTier, NameInferrer,
+};
 pub use error::{DecompilerError, Result};
 pub use types::{
     Declaration, DecompileConfig, DecompileResult, InferredName, Module, ModuleTree,
     WitnessChainData,
 };
+
+/// Infer names using a confidence-gated cost cascade (opt-in).
+///
+/// This is the cost-cascade entry point: supply model tiers ordered
+/// cheapest-first plus an escalation `threshold`, and the cascade runs the cheap
+/// tier first, escalating to more expensive tiers **only** when a result's
+/// confidence falls below the threshold. The returned [`CascadeInferrer`] holds
+/// the per-inference outcome log (see [`CascadeInferrer::outcomes`] and
+/// [`CascadeInferrer::stats`]) so the self-learning loop can attribute results
+/// and self-tune the threshold via [`CascadeInferrer::self_tune`].
+///
+/// The crate's default [`decompile`] pipeline does **not** use this path, so
+/// enabling the cascade is a deliberate, behavior-preserving opt-in.
+pub fn infer_names_cascade(
+    modules: &[Module],
+    tiers: Vec<Box<dyn NameInferrer>>,
+    threshold: f64,
+) -> (Vec<InferredName>, CascadeInferrer) {
+    let mut cascade = CascadeInferrer::new(tiers, threshold);
+    let names = cascade.infer_modules(modules);
+    (names, cascade)
+}
 
 /// Decompile a minified JavaScript bundle.
 ///
